@@ -10,10 +10,26 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <sys/poll.h>
+#include <arpa/inet.h>
+#include <time.h>
+
+#include "packet_implem.h"
 
 int print_usage(char *prog_name) {
     fprintf(stdout, "Usage:\n\t%s [-j nb_thread] [-s size] [-p port]\n", prog_name);
     return EXIT_FAILURE;
+}
+
+void create_pkt_response(pkt_response_t* pkt, pkt_error_code code, uint32_t fsize, char* file)
+{
+    pkt_status_code status_code = pkt_response_set_errcode(pkt, code);
+    if (status_code != PKT_OK) fprintf(stderr, "error setting the error code in response packet");
+
+    status_code = pkt_response_set_fsize(pkt, fsize);
+    if (status_code != PKT_OK) fprintf(stderr, "error setting the file size in response packet");
+
+    status_code = pkt_response_set_file(pkt, file, fsize);
+    if (status_code != PKT_OK) fprintf(stderr, "error setting the file payload in response packet");
 }
 
 int main(int argc, char **argv) {
@@ -52,10 +68,10 @@ int main(int argc, char **argv) {
 
     srand(time(NULL)); // initialse random generator
 
-    printf("Start generating 1000 files");
+    printf("Start generating 1000 files\n");
     uint8_t files[1000][file_size][file_size];
     int r = rand() % 255 + 1; 
-    printf("Files generated.");
+    printf("Files generated.\n");
 
 
     int status;
@@ -88,6 +104,8 @@ int main(int argc, char **argv) {
     if (listenerror == -1) fprintf(stderr, "listen failed\n errno: %d\n", errno);
     else printf("Server listening\n");
 
+    char buf[528];
+
     while(1) {  // main accept() loop
         addr_size = sizeof their_addr;
         new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
@@ -98,9 +116,14 @@ int main(int argc, char **argv) {
             &(((struct sockaddr_in *)&their_addr))->sin_addr,
             s, sizeof s);
         printf("got connection from %s\n", s);
-
         
-        if (send(new_fd, "Hello, world!", 13, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
+        uint8_t code = 0;
+        uint32_t fsize = 13; 
+        char* payload = "Hello, world!";
+        pkt_response_t* pkt = pkt_response_new();
+        create_pkt_response(pkt, code, fsize, payload);
+        pkt_response_encode(pkt, buf);
+        if (send(new_fd, buf, fsize + RESPONSE_HEADER_LENGTH, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
 
 
         close(new_fd);

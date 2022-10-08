@@ -14,7 +14,33 @@
 #include <arpa/inet.h>
 #include <limits.h>
 
-#define MAXDATASIZE 100
+#include "packet_implem.h"
+
+void create_pkt_request(pkt_request_t* pkt, uint32_t findex, uint32_t ksize, char *key)
+{
+    pkt_status_code status_code = pkt_request_set_findex(pkt, findex);
+    if (status_code != PKT_OK) fprintf(stderr, "error setting the file index in request packet");
+
+    status_code = pkt_request_set_ksize(pkt, ksize);
+    if (status_code != PKT_OK) fprintf(stderr, "error setting the key size in request packet");
+
+    uint64_t key_length = ksize * ksize;
+    status_code = pkt_request_set_key(pkt, key, key_length);
+    if (status_code != PKT_OK) fprintf(stderr, "error setting the key in request packet");
+}
+
+void get_current_clock(struct timeval *timestamp) {
+	struct timespec ts;
+	if (clock_gettime(CLOCK_MONOTONIC, &ts)) {
+		//ERROR("Cannot get internal clock");
+	}
+    timestamp->tv_sec = ts.tv_sec;
+	timestamp->tv_usec = ts.tv_nsec/1000;
+}
+
+uint64_t get_ms(struct timeval *timestamp) {
+    return timestamp->tv_sec * 1000 + timestamp->tv_usec / 1000;
+}
 
 int main(int argc, char **argv) {
     int opt;
@@ -99,17 +125,21 @@ int main(int argc, char **argv) {
     }
 
     int numbytes;
-    char buf[MAXDATASIZE];
+    char buf[MAX_RESPONSE_LENGTH];
 
     fprintf(stdout, "before receiving\n");
 
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+    if ((numbytes = recv(sockfd, buf, MAX_RESPONSE_LENGTH-1, 0)) == -1) {
         fprintf(stderr, "Error while receiving from server\n errno: %d\n", errno);
     }
 
-    buf[numbytes] = '\0';
+    pkt_response_t* pkt = pkt_response_new();
+    pkt_response_decode(buf,pkt);
+    
 
-    printf("client: received '%s'\n",buf);
+    printf("error code: '%hhu'\n",pkt_response_get_errcode(pkt));
+    printf("file size: '%u'\n",pkt_response_get_fsize(pkt));
+    printf("error code: '%s'\n",pkt_response_get_file(pkt));
 
     close(sockfd);
 

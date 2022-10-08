@@ -3,8 +3,8 @@ CFLAGS += -c -std=gnu99 -Wall #-Werror -Wextra -O2
 CFLAGS += -D_COLOR
 LDFLAGS += -lz
 
-CLIENT_SOURCES = $(wildcard src/client.c) #we can add more ex: src/client.c src/log.c src/packet_implem.c
-SERVER_SOURCES = $(wildcard src/server.c)
+CLIENT_SOURCES = $(wildcard src/client.c src/packet_implem.c)
+SERVER_SOURCES = $(wildcard src/server.c src/packet_implem.c)
 
 CLIENT_OBJECTS = $(CLIENT_SOURCES:.c=.o)
 SERVER_OBJECTS = $(SERVER_SOURCES:.c=.o)
