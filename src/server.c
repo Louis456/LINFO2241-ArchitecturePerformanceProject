@@ -70,7 +70,14 @@ int main(int argc, char **argv) {
 
     printf("Start generating 1000 files\n");
     uint8_t files[1000][file_size][file_size];
-    int r = rand() % 255 + 1; 
+    for (int i = 0; i < 1000; i++) {
+        for (int j = 0; j < file_size; j++) {
+            for (int k = 0; k < file_size; k++) {
+                uint8_t r = 1 + (rand() % 255);
+                files[i][j][k] = r;
+            }
+        }
+    }
     printf("Files generated.\n");
 
 

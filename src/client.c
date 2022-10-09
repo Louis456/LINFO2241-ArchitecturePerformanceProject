@@ -13,6 +13,7 @@
 #include <sys/poll.h>
 #include <arpa/inet.h>
 #include <limits.h>
+#include <math.h>
 
 #include "packet_implem.h"
 
@@ -42,8 +43,34 @@ uint64_t get_ms(struct timeval *timestamp) {
     return timestamp->tv_sec * 1000 + timestamp->tv_usec / 1000;
 }
 
+// return
+uint32_t get_gaussian_number(uint32_t mean, uint32_t std) {
+    static uint32_t z2 = 0.0;
+    uint32_t randn;
+    if (z2 == 0.0) {
+        uint32_t u1 = 2.0 * rand() / RAND_MAX - 1;
+        uint32_t u2 = 2.0 * rand() / RAND_MAX - 1;
+        uint32_t s = u1*u1 + u2*u2;
+        while (s >= 1 || s == 0){
+            u1 = 2.0 * rand() / RAND_MAX - 1;
+            u2 = 2.0 * rand() / RAND_MAX - 1;
+            s = u1*u1 + u2*u2;
+        }
+        uint32_t z1 = u1 * sqrt(-2.0 * log(s) / s);
+        uint32_t z2 = u2 * sqrt(-2.0 * log(s) / s);
+        randn = (z1 * std) + mean;        
+    } else {
+        randn = (z2 * std) + mean;
+        z2 = 0.0;     
+    }
+    return randn;
+
+    
+}
+
 int main(int argc, char **argv) {
     int opt;
+    srand(time(NULL)); // initialse random generator
 
     char *server_ip_port = NULL;
     uint16_t server_port;
@@ -52,7 +79,7 @@ int main(int argc, char **argv) {
     char *error = NULL;
     uint32_t key_size;
     uint32_t mean_rate_request;
-    uint32_t duration; //in seconds
+    uint32_t duration; //in ms
     
     fprintf(stdout, "before options\n");
 
@@ -124,17 +151,70 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Error while connecting to server\n errno: %d\n", errno);
     }
 
+
+
+
+    struct timeval start_time;
+    struct timeval now;
+    struct timeval diff_time;
+    get_current_clock(&start_time);
+    get_current_clock(&now);
+    timersub(&now, &start_time, &diff_time);
+    uint64_t key_length = key_size * key_size;
+    char buf_request[key_length + 8];
+
+
+    while (get_ms(&diff_time) < duration) {
+
+
+        // Sleep
+        uint32_t mu = (1/mean_rate_request)*1000000;
+        uint32_t sigma = 0.1*mu;
+        uint32_t time_to_sleep = get_gaussian_number(mu, sigma); // TODO: std ?
+        int errsleep = usleep(time_to_sleep); // time in microseconds
+        if (errsleep == -1) fprintf(stderr, "Error while nanosleeping\n errno: %d\n", errno);
+
+        // Create key
+        printf("Start generating a random key\n");
+        uint8_t key[key_size*key_size];       
+        for (int i = 0; i < key_size; i++) {      
+            uint8_t r = 1 + (rand() % 255);
+            key[i] = r;           
+        }    
+        printf("random key generated.\n");
+
+        uint32_t file_index = (rand() % 999);
+        pkt_request_t* pkt = pkt_request_new();
+        pkt_request_set_findex(pkt, file_index);
+        pkt_request_set_ksize(pkt, key_size);
+        pkt_request_set_key(pkt, (char*) key, key_size*key_size);
+
+        
+        // Just before looping again, check current time and get diff from start
+        get_current_clock(&now);
+        timersub(&now, &start_time, &diff_time);
+    }
+
+/*
+1 000/s 
+1 / 1 000 = 1ms = 1000 µs OK = 0.001 s
+1 000 000/s
+1 / 1 000 000 = 1 µs != 1 000 000 µs PAS OK = 0.000001 s 
+*/
+
+
+
     int numbytes;
-    char buf[MAX_RESPONSE_LENGTH];
+    char buf_response[MAX_RESPONSE_LENGTH];
 
     fprintf(stdout, "before receiving\n");
 
-    if ((numbytes = recv(sockfd, buf, MAX_RESPONSE_LENGTH-1, 0)) == -1) {
+    if ((numbytes = recv(sockfd, buf_response, MAX_RESPONSE_LENGTH-1, 0)) == -1) {
         fprintf(stderr, "Error while receiving from server\n errno: %d\n", errno);
     }
 
     pkt_response_t* pkt = pkt_response_new();
-    pkt_response_decode(buf,pkt);
+    pkt_response_decode(buf_response,pkt);
     
 
     printf("error code: '%hhu'\n",pkt_response_get_errcode(pkt));

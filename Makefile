@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS += -c -std=gnu99 -Wall #-Werror -Wextra -O2
+CFLAGS += -c -std=gnu99 -Wall -Wextra -O2 #-Werror
 CFLAGS += -D_COLOR
 LDFLAGS += -lz
 
