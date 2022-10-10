@@ -56,22 +56,30 @@ void pkt_response_del(pkt_response_t *pkt)
     pkt = NULL;
 }
 
-void pkt_request_decode(const char *data, pkt_request_t *pkt)
+void pkt_request_decode(const char *data, pkt_request_t *pkt, uint8_t header)
 {
-    pkt_request_set_findex(pkt, ntohl(((uint32_t *) (data))[0]));
-    pkt_request_set_ksize(pkt, ntohl(((uint32_t *) (data))[1]));
-    uint64_t key_length = pkt_request_get_ksize(pkt) * pkt_request_get_ksize(pkt);
-    pkt_request_set_key(pkt, data+8, key_length);
+    if (header == 1){
+        pkt_request_set_findex(pkt, ntohl(((uint32_t *) (data))[0]));
+        pkt_request_set_ksize(pkt, ntohl(((uint32_t *) (data))[1]));
+    } else if (header == 0) {
+        uint64_t key_length = pkt_request_get_ksize(pkt) * pkt_request_get_ksize(pkt);
+        pkt_request_set_key(pkt, data, key_length);
+    }
+    
 }
 
-void pkt_response_decode(const char *data, pkt_response_t *pkt)
+void pkt_response_decode(const char *data, pkt_response_t *pkt, uint8_t header)
 {
-    pkt_response_set_errcode(pkt, ((uint8_t *) (data))[0]);
-    pkt_response_set_fsize(pkt, ntohl(((uint32_t *) (data+1))[0]));
-    pkt_response_set_file(pkt, data+5, pkt_response_get_fsize(pkt));
+    if (header == 1) {
+        pkt_response_set_errcode(pkt, ((uint8_t *) (data))[0]);
+        pkt_response_set_fsize(pkt, ntohl(((uint32_t *) (data+1))[0]));
+    } else {
+        pkt_response_set_file(pkt, data, pkt_response_get_fsize(pkt));
+    }
+    
 }
 
-void pkt_request_encode(const pkt_request_t* pkt, char *buf)
+void pkt_request_encode(pkt_request_t* pkt, char *buf)
 {
     uint32_t findex = htonl(pkt_request_get_findex(pkt));
     uint32_t ksize = htonl(pkt_request_get_ksize(pkt));
@@ -85,7 +93,7 @@ void pkt_request_encode(const pkt_request_t* pkt, char *buf)
     memcpy(buf+8, pkt_request_get_key(pkt), key_length);
 }
 
-void pkt_response_encode(const pkt_response_t* pkt, char *buf)
+void pkt_response_encode(pkt_response_t* pkt, char *buf)
 {
     uint8_t errcode = (pkt_response_get_errcode(pkt));
     uint32_t fsize = htonl(pkt_response_get_fsize(pkt));

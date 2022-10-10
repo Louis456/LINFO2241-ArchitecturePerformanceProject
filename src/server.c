@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
     socklen_t addr_size;
     struct addrinfo hints;
     struct addrinfo *serverinfo;  // will point to the results
-    int sockfd, new_fd;
+    int sockfd;
     char s[INET6_ADDRSTRLEN];
 
     memset(&hints, 0, sizeof hints); // make sure the struct is empty
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 
     while(1) {  // main accept() loop
         addr_size = sizeof their_addr;
-        new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+        int new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
         if (new_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
         printf("Connection accepted\n");
 
@@ -121,6 +121,13 @@ int main(int argc, char **argv) {
         printf("packet file index : %u\n",pkt_request_get_findex(pkt_request));
         printf("packet key size : %u\n",pkt_request_get_ksize(pkt_request));
         printf("packet key : %s\n",pkt_request_get_key(pkt_request));
+
+        char* file1 = "coucou";
+
+        pkt_response_t* pkt_response = pkt_response_new();
+        create_pkt_response(pkt_response,0,6,file1);
+        pkt_response_encode(pkt_response,buf);
+        send(new_fd,buf,11,0);
 
         close(new_fd);
 

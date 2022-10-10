@@ -19,14 +19,15 @@ void recv_request_packet(pkt_request_t* pkt, int sockfd) {
     if ((numbytes = recv(sockfd, buf_header, REQUEST_HEADER_LENGTH, 0)) == -1) {
         fprintf(stderr, "Error while receiving header from client\n errno: %d\n", errno);
     }
-    uint32_t findex = ((uint32_t *) buf_header)[0];
-    uint32_t ksize = ((uint32_t *) buf_header)[1];
 
-    char buf_key[ksize*ksize];
-    if ((numbytes = recv(sockfd, buf_key, ksize*ksize, 0)) == -1) {
+    pkt_request_decode(buf_header,pkt,1);
+    uint32_t key_payload_length = pkt_request_get_ksize(pkt)*pkt_request_get_ksize(pkt);
+
+    char buf_key[key_payload_length];
+    if ((numbytes = recv(sockfd, buf_key, key_payload_length, 0)) == -1) {
         fprintf(stderr, "Error while receiving payload from client\n errno: %d\n", errno);
     }
-    create_pkt_request(pkt, findex, ksize, buf_key);
+    pkt_request_decode(buf_key,pkt,0);
 }
 
 void create_pkt_request(pkt_request_t* pkt, uint32_t findex, uint32_t ksize, char *key)
@@ -48,14 +49,13 @@ void recv_response_packet(pkt_response_t* pkt, int sockfd) {
     if ((numbytes = recv(sockfd, buf_header, RESPONSE_HEADER_LENGTH, 0)) == -1) {
         fprintf(stderr, "Error while receiving header from server\n errno: %d\n", errno);
     }
-    uint32_t errcode = ((uint8_t *) buf_header)[0];
-    uint32_t fsize = ((uint32_t *) buf_header+1)[0];
+    pkt_response_decode(buf_header,pkt,1);
 
-    char buf_file[fsize];
-    if ((numbytes = recv(sockfd, buf_file, fsize, 0)) == -1) {
+    char buf_file[pkt_response_get_fsize(pkt)];
+    if ((numbytes = recv(sockfd, buf_file, pkt_response_get_fsize(pkt), 0)) == -1) {
         fprintf(stderr, "Error while receiving file from server\n errno: %d\n", errno);
     }
-    create_pkt_response(pkt, errcode, fsize, buf_file);
+    pkt_response_decode(buf_file,pkt,0);
 }
 
 void get_current_clock(struct timeval *timestamp) {

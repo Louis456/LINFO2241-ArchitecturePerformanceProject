@@ -49,26 +49,26 @@ void pkt_response_del(pkt_response_t *pkt);
  * @len: number of received bytes
  * @pkt: a valid pkt_request_t struct in which the data will be stored
 */
-void pkt_request_decode(const char *data, pkt_request_t *pkt);
+void pkt_request_decode(const char *data, pkt_request_t *pkt, uint8_t header);
 
 /* Decode the data from the buffer into a pkt_response structure.
  * @data: array of bytes 
  * @len: number of received bytes
  * @pkt: a valid pkt_response_t struct in which the data will be stored
 */
-void pkt_response_decode(const char *data, pkt_response_t *pkt);
+void pkt_response_decode(const char *data, pkt_response_t *pkt, uint8_t header);
 
 /* Encode a pkt_request into a buffer, in network-byte-order.
  * @pkt: structure to be decoded
  * @buf: array of bytes to store to be encoded from the structure with enough memory
 */
-void pkt_request_encode(const pkt_request_t*, char *buf);
+void pkt_request_encode(pkt_request_t*, char *buf);
 
 /* Encode a pkt_response into a buffer, in network-byte-order.
  * @pkt: structure to be decoded
  * @buf: array of bytes to store to be encoded from the structure with enough memory
 */
-void pkt_response_encode(const pkt_response_t*, char *buf);
+void pkt_response_encode(pkt_response_t*, char *buf);
 
 
 /* Getter and setter of response packets */
