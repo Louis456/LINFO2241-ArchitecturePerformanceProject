@@ -5,6 +5,10 @@
 #include <stdint.h> /* uintx_t */
 #include <unistd.h>
 #include <stdio.h>  /* ssize_t */
+#include <zlib.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct pkt_request pkt_request_t;
 typedef struct pkt_response pkt_response_t;

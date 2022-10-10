@@ -8,78 +8,27 @@
 #include <netdb.h>
 #include <string.h>
 #include <errno.h>
-#include <time.h>
-#include <sys/time.h>
 #include <sys/poll.h>
 #include <arpa/inet.h>
 #include <limits.h>
-#include <math.h>
+#include <pthread.h>
 
-#include "packet_implem.h"
-
-void create_pkt_request(pkt_request_t* pkt, uint32_t findex, uint32_t ksize, char *key)
-{
-    pkt_status_code status_code = pkt_request_set_findex(pkt, findex);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the file index in request packet");
-
-    status_code = pkt_request_set_ksize(pkt, ksize);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the key size in request packet");
-
-    uint64_t key_length = ksize * ksize;
-    status_code = pkt_request_set_key(pkt, key, key_length);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the key in request packet");
-}
-
-void get_current_clock(struct timeval *timestamp) {
-	struct timespec ts;
-	if (clock_gettime(CLOCK_MONOTONIC, &ts)) {
-		//ERROR("Cannot get internal clock");
-	}
-    timestamp->tv_sec = ts.tv_sec;
-	timestamp->tv_usec = ts.tv_nsec/1000;
-}
-
-uint64_t get_ms(struct timeval *timestamp) {
-    return timestamp->tv_sec * 1000 + timestamp->tv_usec / 1000;
-}
-
-// return
-uint32_t get_gaussian_number(uint32_t mean, uint32_t std) {
-    static uint32_t z2 = 0.0;
-    uint32_t randn;
-    if (z2 == 0.0) {
-        uint32_t u1 = 2.0 * rand() / RAND_MAX - 1;
-        uint32_t u2 = 2.0 * rand() / RAND_MAX - 1;
-        uint32_t s = u1*u1 + u2*u2;
-        while (s >= 1 || s == 0){
-            u1 = 2.0 * rand() / RAND_MAX - 1;
-            u2 = 2.0 * rand() / RAND_MAX - 1;
-            s = u1*u1 + u2*u2;
-        }
-        uint32_t z1 = u1 * sqrt(-2.0 * log(s) / s);
-        uint32_t z2 = u2 * sqrt(-2.0 * log(s) / s);
-        randn = (z1 * std) + mean;        
-    } else {
-        randn = (z2 * std) + mean;
-        z2 = 0.0;     
-    }
-    return randn;
-
-    
-}
+#include "../headers/packet_implem.h"
+#include "../headers/utils.h"
 
 int main(int argc, char **argv) {
     int opt;
-    srand(time(NULL)); // initialse random generator
+    srandom(time(NULL)); // initialse random generator
 
     char *server_ip_port = NULL;
-    uint16_t server_port;
+    //uint16_t server_port;
     char *server_port_str = NULL;
     char *server_ip = NULL;
     char *error = NULL;
-    uint32_t key_size;
-    uint32_t mean_rate_request;
-    uint32_t duration; //in ms
+    uint32_t mean_rate_request = 0;
+    uint32_t duration = 0; //in ms
+    uint32_t key_size = 0;
+    uint64_t key_payload_length = 0; // key_size squared
     
     fprintf(stdout, "before options\n");
 
@@ -87,6 +36,7 @@ int main(int argc, char **argv) {
         switch (opt) {
         case 'k':
             key_size = (uint32_t) strtol(optarg,&error,10);
+            key_payload_length = key_size * key_size;
             if (*error != '\0') {
                 fprintf(stderr, "key size is not a number\n");
                 return 1;
@@ -122,13 +72,12 @@ int main(int argc, char **argv) {
     server_ip = token;
     token = strtok(NULL, separator);
     server_port_str = token;
-    server_port = (uint16_t) strtol(token, &error,10);    
+    //server_port = (uint16_t) strtol(token, &error,10);    
     if (*error != '\0') {
         fprintf(stderr, "Receiver port parameter is not a number\n");
         return 1;
     }
 
-    int sockfd;
     int status;   
     struct addrinfo hints;
     struct addrinfo *serverinfo;
@@ -143,86 +92,33 @@ int main(int argc, char **argv) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
     }
 
-    sockfd = socket(serverinfo->ai_family, serverinfo->ai_socktype, serverinfo->ai_protocol);
-    if (sockfd == -1) fprintf(stderr, "Error while creating the socket\n errno: %d\n", errno);
-    
-    if (connect(sockfd, serverinfo->ai_addr, serverinfo->ai_addrlen) == -1) {
-        close(sockfd);
-        fprintf(stderr, "Error while connecting to server\n errno: %d\n", errno);
-    }
-
-
-
-
     struct timeval start_time;
     struct timeval now;
     struct timeval diff_time;
     get_current_clock(&start_time);
     get_current_clock(&now);
     timersub(&now, &start_time, &diff_time);
-    uint64_t key_length = key_size * key_size;
-    char buf_request[key_length + 8];
 
-
+    client_thread_args *args = (client_thread_args *) malloc(sizeof(client_thread_args));
+    args->serverinfo = serverinfo;
+    args->key_size = key_size;
+    args->key_payload_length = key_payload_length;
     while (get_ms(&diff_time) < duration) {
+        // Start a client thread
+        pthread_t thread;
+        int pthread_err = pthread_create(&thread, NULL, &start_client, (void*) args);
+        if (pthread_err != 0) fprintf(stderr, "Error while creating a thread\n");
 
-
-        // Sleep
+        // Sleep following a normal distribution with Box-Muller algorithm
         uint32_t mu = (1/mean_rate_request)*1000000;
         uint32_t sigma = 0.1*mu;
-        uint32_t time_to_sleep = get_gaussian_number(mu, sigma); // TODO: std ?
+        uint32_t time_to_sleep = get_gaussian_number(mu, sigma);
         int errsleep = usleep(time_to_sleep); // time in microseconds
         if (errsleep == -1) fprintf(stderr, "Error while nanosleeping\n errno: %d\n", errno);
-
-        // Create key
-        printf("Start generating a random key\n");
-        uint8_t key[key_size*key_size];       
-        for (int i = 0; i < key_size; i++) {      
-            uint8_t r = 1 + (rand() % 255);
-            key[i] = r;           
-        }    
-        printf("random key generated.\n");
-
-        uint32_t file_index = (rand() % 999);
-        pkt_request_t* pkt = pkt_request_new();
-        pkt_request_set_findex(pkt, file_index);
-        pkt_request_set_ksize(pkt, key_size);
-        pkt_request_set_key(pkt, (char*) key, key_size*key_size);
-
         
         // Just before looping again, check current time and get diff from start
         get_current_clock(&now);
         timersub(&now, &start_time, &diff_time);
     }
-
-/*
-1 000/s 
-1 / 1 000 = 1ms = 1000 µs OK = 0.001 s
-1 000 000/s
-1 / 1 000 000 = 1 µs != 1 000 000 µs PAS OK = 0.000001 s 
-*/
-
-
-
-    int numbytes;
-    char buf_response[MAX_RESPONSE_LENGTH];
-
-    fprintf(stdout, "before receiving\n");
-
-    if ((numbytes = recv(sockfd, buf_response, MAX_RESPONSE_LENGTH-1, 0)) == -1) {
-        fprintf(stderr, "Error while receiving from server\n errno: %d\n", errno);
-    }
-
-    pkt_response_t* pkt = pkt_response_new();
-    pkt_response_decode(buf_response,pkt);
     
-
-    printf("error code: '%hhu'\n",pkt_response_get_errcode(pkt));
-    printf("file size: '%u'\n",pkt_response_get_fsize(pkt));
-    printf("error code: '%s'\n",pkt_response_get_file(pkt));
-
-    close(sockfd);
-
 }
-
-// ./client -k 128 -r 1000 -t 10 127.0.0.1:2241

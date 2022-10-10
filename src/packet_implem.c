@@ -1,10 +1,7 @@
-#include "packet_implem.h"
+#include "../headers/packet_implem.h"
 
-/* Extra #includes */
-#include <zlib.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <string.h>
+
+
 
 struct __attribute__((__packed__)) pkt_request {
     

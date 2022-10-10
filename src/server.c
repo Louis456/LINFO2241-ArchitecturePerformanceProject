@@ -13,23 +13,12 @@
 #include <arpa/inet.h>
 #include <time.h>
 
-#include "packet_implem.h"
+#include "../headers/packet_implem.h"
+#include "../headers/utils.h"
 
 int print_usage(char *prog_name) {
     fprintf(stdout, "Usage:\n\t%s [-j nb_thread] [-s size] [-p port]\n", prog_name);
     return EXIT_FAILURE;
-}
-
-void create_pkt_response(pkt_response_t* pkt, pkt_error_code code, uint32_t fsize, char* file)
-{
-    pkt_status_code status_code = pkt_response_set_errcode(pkt, code);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the error code in response packet");
-
-    status_code = pkt_response_set_fsize(pkt, fsize);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the file size in response packet");
-
-    status_code = pkt_response_set_file(pkt, file, fsize);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the file payload in response packet");
 }
 
 int main(int argc, char **argv) {
@@ -66,14 +55,16 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    srand(time(NULL)); // initialse random generator
+    srandom(42); // initialse random generator
 
     printf("Start generating 1000 files\n");
-    uint8_t files[1000][file_size][file_size];
+    uint8_t ***files = malloc(sizeof(uint8_t**)*1000);
     for (int i = 0; i < 1000; i++) {
+        files[i] = malloc(sizeof(uint8_t*)*file_size);
         for (int j = 0; j < file_size; j++) {
+            files[i][j] = malloc(sizeof(uint8_t)*file_size);
             for (int k = 0; k < file_size; k++) {
-                uint8_t r = 1 + (rand() % 255);
+                uint8_t r = 1 + (random() % 255);
                 files[i][j][k] = r;
             }
         }
@@ -123,16 +114,34 @@ int main(int argc, char **argv) {
             &(((struct sockaddr_in *)&their_addr))->sin_addr,
             s, sizeof s);
         printf("got connection from %s\n", s);
+
+        pkt_request_t* pkt_request = pkt_request_new();
+        recv_request_packet(pkt_request, new_fd);
+
+        printf("packet file index : %u\n",pkt_request_get_findex(pkt_request));
+        printf("packet key size : %u\n",pkt_request_get_ksize(pkt_request));
+        printf("packet key : %s\n",pkt_request_get_key(pkt_request));
+
+        close(new_fd);
+
+    }
         
-        uint8_t code = 0;
+        /*uint8_t code = 0;
         uint32_t fsize = 13; 
         char* payload = "Hello, world!";
         pkt_response_t* pkt = pkt_response_new();
         create_pkt_response(pkt, code, fsize, payload);
         pkt_response_encode(pkt, buf);
-        if (send(new_fd, buf, fsize + RESPONSE_HEADER_LENGTH, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
+        if (send(new_fd, buf, fsize + RESPONSE_HEADER_LENGTH, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);*/
 
 
-        close(new_fd);
-    }    
+    // Free files
+    for (int i = 0; i < 1000; i++) {
+        free(files[i]);
+        for (int j = 0; j < file_size; j++) {
+            free(files[i][j]);
+        }
+    }
+    free(files);
+    
 }
