@@ -131,12 +131,13 @@ int main(int argc, char **argv) {
         int n_events = poll(fds, 1, 0);
         if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
         else if (n_events > 0) {         
-            pollin_happened = fds[0].revents & POLLIN;
-            printf("pollin happened\n");
-            if (pollin_happened) { //new connection on server socket
-                get_current_clock(&start_time); // reset timer upon new request
-                do {
+            do {
+                pollin_happened = fds[0].revents & POLLIN;
+                if (pollin_happened) { //new connection on server socket
+
+                    get_current_clock(&start_time); // reset timer upon new request
                     addr_size = sizeof their_addr;
+
                     new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
                     if (new_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
                     printf("Connection accepted\n");
@@ -173,11 +174,14 @@ int main(int argc, char **argv) {
                             free(node);
                         } 
                     }
+                }
+                n_events = poll(fds, 1, 0);
+                
 
-                } while (new_fd != -1); // accept while there is new connections on listen queue
-            }
-        }
-        for (int j = 0; j < nb_threads; j++) {
+            } while (n_events > 0); // accept while there is new connections on listen queue
+            
+        } else {
+            for (int j = 0; j < nb_threads; j++) {
             if (thread_status[j] == STOPPED && !isEmpty(&queue)) {
                 thread_status[j] = RUNNING;
                 node_t *node = pop(&queue);
@@ -194,6 +198,8 @@ int main(int argc, char **argv) {
                 free(node);
             } 
         }
+        }
+        
         // get time diff from last request received and now
         get_current_clock(&now);
         timersub(&now, &start_time, &diff_time);
