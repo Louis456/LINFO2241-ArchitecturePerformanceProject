@@ -59,10 +59,13 @@ int main(int argc, char **argv) {
 
     printf("Start generating 1000 files\n");
     char ***files = malloc(sizeof(char**)*1000);
+    if (files == NULL) fprintf(stderr, "Error malloc file\n");
     for (int i = 0; i < 1000; i++) {
         files[i] = malloc(sizeof(char*)*file_size);
+        if (files[i] == NULL) fprintf(stderr, "Error malloc file\n");
         for (uint32_t j = 0; j < file_size; j++) {
             files[i][j] = malloc(sizeof(char)*file_size);
+            if (files[i][j] == NULL) fprintf(stderr, "Error malloc file\n");
             for (uint32_t k = 0; k < file_size; k++) {
                 char r = 1 + (random() % 255);
                 files[i][j][k] = r;
@@ -98,7 +101,7 @@ int main(int argc, char **argv) {
     int binderror = bind(sockfd, serverinfo->ai_addr, serverinfo->ai_addrlen);
     if (binderror == -1) fprintf(stderr, "Error while binding the socket\n errno: %d\n", errno);
  
-    int listenerror = listen(sockfd, 5);// # connections allowed on the incoming queue.
+    int listenerror = listen(sockfd, 1000);// # connections allowed on the incoming queue.
     if (listenerror == -1) fprintf(stderr, "listen failed\n errno: %d\n", errno);
     else printf("Server listening\n");
 
@@ -107,25 +110,31 @@ int main(int argc, char **argv) {
     pthread_t threads[nb_threads];
     thread_status_code thread_status[nb_threads]; 
     for (int j = 0; j < nb_threads; j++) {
-        threads[j] = NULL;
         thread_status[j] = STOPPED;
     }
+
+    struct timeval start_time;
+    struct timeval now;
+    struct timeval diff_time;
+    get_current_clock(&start_time);
+    get_current_clock(&now);
+    timersub(&now, &start_time, &diff_time);
 
     // Create a queue
     request_queue_t queue;
     struct pollfd fds[1000];
-    int pollin_happended;
+    int pollin_happened;
     fds[0].fd = sockfd; fds[0].events = POLLIN;
     int new_fd;
 
-    while(1) {  // main accept() loop
-        int n_events = poll(fds, 1, 4000);
+    while(!(get_ms(&diff_time) > 7000 && isEmpty(&queue))) {  // main accept() loop
+        int n_events = poll(fds, 1, 0);
         if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
-        if (n_events == 0) printf("no event happened with poll\n");
-        
-        if (n_events > 0) {         
-            pollin_happended = fds[0].revents & POLLIN;
-            if (pollin_happended) { //new connection on server socket
+        else if (n_events > 0) {         
+            pollin_happened = fds[0].revents & POLLIN;
+            printf("pollin happened\n");
+            if (pollin_happened) { //new connection on server socket
+                get_current_clock(&start_time); // reset timer upon new request
                 do {
                     addr_size = sizeof their_addr;
                     new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
@@ -138,11 +147,13 @@ int main(int argc, char **argv) {
                     printf("got connection from %s\n", s);
 
                     pkt_request_t* pkt_request = pkt_request_new();
+                    if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet in main server function\n");
                     recv_request_packet(pkt_request, new_fd);
                     printf("packet file index : %u\n",pkt_request_get_findex(pkt_request));
                     printf("packet key size : %u\n",pkt_request_get_ksize(pkt_request));
-                    printf("packet key : %s\n",pkt_request_get_key(pkt_request));
+                    //printf("packet key : %s\n",pkt_request_get_key(pkt_request));
                     push(&queue, new_fd,pkt_request);
+                    printf("Packet added, queue size: %d\n", queue.size);
 
                     // Check if there is an available thread
                     for (int j = 0; j < nb_threads; j++) {
@@ -150,6 +161,7 @@ int main(int argc, char **argv) {
                             thread_status[j] = RUNNING;
                             node_t *node = pop(&queue);
                             server_thread_args *args = (server_thread_args *) malloc(sizeof(server_thread_args));
+                            if (args == NULL) fprintf(stderr, "Error malloc server thread args\n");
                             args->id = j;
                             args->fd = node->fd;
                             args->pkt = node->pkt;
@@ -157,41 +169,48 @@ int main(int argc, char **argv) {
                             args->status = &(thread_status[j]);
                             args->files = files;
                             pthread_create(&threads[j], NULL, &start_server_thread, (void*) args);
+                            printf("Thread %d started\n", j);
                             free(node);
                         } 
                     }
 
                 } while (new_fd != -1); // accept while there is new connections on listen queue
-            } else { //no new connection but we execute stored request
-                // Check if there is an available thread
-                for (int j = 0; j < nb_threads; j++) {
-                    if (thread_status[j] == STOPPED && !isEmpty(&queue)) {
-                        thread_status[j] = RUNNING;
-                        node_t *node = pop(&queue);
-                        server_thread_args *args = (server_thread_args *) malloc(sizeof(server_thread_args));
-                        args->id = j;
-                        args->fd = node->fd;
-                        args->pkt = node->pkt;
-                        args->fsize = file_size;
-                        args->status = &(thread_status[j]);
-                        args->files = files;
-                        pthread_create(&threads[j], NULL, &start_server_thread, (void*) args);
-                        free(node);
-                    } 
-                }
             }
-            
-                
         }
+        for (int j = 0; j < nb_threads; j++) {
+            if (thread_status[j] == STOPPED && !isEmpty(&queue)) {
+                thread_status[j] = RUNNING;
+                node_t *node = pop(&queue);
+                server_thread_args *args = (server_thread_args *) malloc(sizeof(server_thread_args));
+                if (args == NULL) fprintf(stderr, "Error malloc server thread args\n");
+                args->id = j;
+                args->fd = node->fd;
+                args->pkt = node->pkt;
+                args->fsize = file_size;
+                args->status = &(thread_status[j]);
+                args->files = files;
+                pthread_create(&threads[j], NULL, &start_server_thread, (void*) args);
+                printf("Thread %d started\n", j);
+                free(node);
+            } 
+        }
+        // get time diff from last request received and now
+        get_current_clock(&now);
+        timersub(&now, &start_time, &diff_time);
     }
 
     close(sockfd);
     // Free files
     for (int i = 0; i < 1000; i++) {
-        free(files[i]);
         for (uint32_t j = 0; j < file_size; j++) {
             free(files[i][j]);
         }
+        free(files[i]);
     }
     free(files);
+
+    for (uint16_t j = 0; j < nb_threads; j++){
+        pthread_join(threads[j], NULL);
+    }
+    
 }

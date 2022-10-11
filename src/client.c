@@ -99,26 +99,44 @@ int main(int argc, char **argv) {
     get_current_clock(&now);
     timersub(&now, &start_time, &diff_time);
 
+    uint32_t nb_available_threads = 1000000;
+    uint32_t thread_id = 0;
+    pthread_t *threads = malloc(sizeof(pthread_t) * nb_available_threads); //takes 4mo of RAM
+
     client_thread_args *args = (client_thread_args *) malloc(sizeof(client_thread_args));
+    if (args == NULL) fprintf(stderr, "Error malloc: client_thread_args\n");
     args->serverinfo = serverinfo;
     args->key_size = key_size;
     args->key_payload_length = key_payload_length;
     while (get_ms(&diff_time) < duration) {
+        printf("duration : %d\n", duration);
+        printf("creating client\n");
         // Start a client thread
-        pthread_t thread;
-        int pthread_err = pthread_create(&thread, NULL, &start_client, (void*) args);
+        int pthread_err = pthread_create(&(threads[thread_id]), NULL, &start_client, (void*) args);
         if (pthread_err != 0) fprintf(stderr, "Error while creating a thread\n");
+        thread_id++;
 
         // Sleep following a normal distribution with Box-Muller algorithm
-        uint32_t mu = (1/mean_rate_request)*1000000;
-        uint32_t sigma = 0.1*mu;
+        double mu = (1/((double)mean_rate_request))*1000000;
+        printf("mu : %f\n", mu);
+        double sigma = 0.1*mu;
+        printf("sigma : %f\n",sigma);
         uint32_t time_to_sleep = get_gaussian_number(mu, sigma);
+        printf("u_sec to sleep: %d\n", time_to_sleep); 
         int errsleep = usleep(time_to_sleep); // time in microseconds
         if (errsleep == -1) fprintf(stderr, "Error while nanosleeping\n errno: %d\n", errno);
         
         // Just before looping again, check current time and get diff from start
         get_current_clock(&now);
         timersub(&now, &start_time, &diff_time);
+        printf("diff time : %ld\n", get_ms(&diff_time)); 
+
     }
+
+    for (uint32_t i = 0; i < thread_id; i++){
+        pthread_join(threads[i], NULL);
+    }
+
+    
     
 }

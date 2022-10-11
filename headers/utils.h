@@ -76,7 +76,7 @@ void* start_client(void* args);
 /* Get random number following a normal distribution from paramter's mean and std. 
  * Uses the Box-Muller algorithm 
  * @pre: rand should be initialised, e.g. using: srand(time(NULL)); */
-uint32_t get_gaussian_number(uint32_t mean, uint32_t std);
+uint32_t get_gaussian_number(double mean, double std);
 
 
 bool isEmpty(request_queue_t* queue) ;
