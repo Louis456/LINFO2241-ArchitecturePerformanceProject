@@ -112,25 +112,23 @@ void* start_client(void* args) {
 }
 
 uint32_t get_gaussian_number(uint32_t mean, uint32_t std) {
-    static uint32_t z2 = 0.0;
-    uint32_t randn;
+    static double z2 = 0.0;
+    double randn;
     if (z2 == 0.0) {
-        uint32_t u1 = 2.0 * random() / RAND_MAX - 1;
-        uint32_t u2 = 2.0 * random() / RAND_MAX - 1;
-        uint32_t s = u1*u1 + u2*u2;
-        while (s >= 1 || s == 0){
+	double u1, u2, s;
+        do {
             u1 = 2.0 * random() / RAND_MAX - 1;
             u2 = 2.0 * random() / RAND_MAX - 1;
             s = u1*u1 + u2*u2;
-        }
-        uint32_t z1 = u1 * sqrt(-2.0 * log(s) / s);
+	} while (s >= 1 || s == 0);
+        double z1 = u1 * sqrt(-2.0 * log(s) / s);
         z2 = u2 * sqrt(-2.0 * log(s) / s);
         randn = (z1 * std) + mean;        
     } else {
         randn = (z2 * std) + mean;
         z2 = 0.0;     
     }
-    return randn;
+    return (uint32_t) randn;
     
 }
 
