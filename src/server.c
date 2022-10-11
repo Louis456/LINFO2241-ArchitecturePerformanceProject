@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     int opt;
 
     char *listen_port;
-    uint16_t file_size;
+    uint32_t file_size;
     uint16_t nb_threads;
     char *error = NULL;
     printf("before options\n");
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
             nb_threads = (uint16_t) strtol(optarg, &error, 10);
             break;
         case 's': // file size to be squared
-            file_size = (uint16_t) strtol(optarg, &error, 10);
+            file_size = (uint32_t) strtol(optarg, &error, 10);
             break;
         case 'p': // listen port
             listen_port = optarg;
@@ -58,13 +58,13 @@ int main(int argc, char **argv) {
     srandom(42); // initialse random generator
 
     printf("Start generating 1000 files\n");
-    uint8_t ***files = malloc(sizeof(uint8_t**)*1000);
+    char ***files = malloc(sizeof(char**)*1000);
     for (int i = 0; i < 1000; i++) {
-        files[i] = malloc(sizeof(uint8_t*)*file_size);
-        for (int j = 0; j < file_size; j++) {
-            files[i][j] = malloc(sizeof(uint8_t)*file_size);
-            for (int k = 0; k < file_size; k++) {
-                uint8_t r = 1 + (random() % 255);
+        files[i] = malloc(sizeof(char*)*file_size);
+        for (uint32_t j = 0; j < file_size; j++) {
+            files[i][j] = malloc(sizeof(char)*file_size);
+            for (uint32_t k = 0; k < file_size; k++) {
+                char r = 1 + (random() % 255);
                 files[i][j][k] = r;
             }
         }
@@ -102,53 +102,96 @@ int main(int argc, char **argv) {
     if (listenerror == -1) fprintf(stderr, "listen failed\n errno: %d\n", errno);
     else printf("Server listening\n");
 
-    char buf[528];
+
+    // Init thread pool and its status
+    pthread_t threads[nb_threads];
+    thread_status_code thread_status[nb_threads]; 
+    for (int j = 0; j < nb_threads; j++) {
+        threads[j] = NULL;
+        thread_status[j] = STOPPED;
+    }
+
+    // Create a queue
+    request_queue_t queue;
+    struct pollfd fds[1000];
+    int pollin_happended;
+    fds[0].fd = sockfd; fds[0].events = POLLIN;
+    int new_fd;
 
     while(1) {  // main accept() loop
-        addr_size = sizeof their_addr;
-        int new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
-        if (new_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
-        printf("Connection accepted\n");
-
-        inet_ntop(their_addr.ss_family, 
-            &(((struct sockaddr_in *)&their_addr))->sin_addr,
-            s, sizeof s);
-        printf("got connection from %s\n", s);
-
-        pkt_request_t* pkt_request = pkt_request_new();
-        recv_request_packet(pkt_request, new_fd);
-
-        printf("packet file index : %u\n",pkt_request_get_findex(pkt_request));
-        printf("packet key size : %u\n",pkt_request_get_ksize(pkt_request));
-        printf("packet key : %s\n",pkt_request_get_key(pkt_request));
-
-        char* file1 = "coucou";
-
-        pkt_response_t* pkt_response = pkt_response_new();
-        create_pkt_response(pkt_response,0,6,file1);
-        pkt_response_encode(pkt_response,buf);
-        send(new_fd,buf,11,0);
-
-        close(new_fd);
-
-    }
+        int n_events = poll(fds, 1, 4000);
+        if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
+        if (n_events == 0) printf("no event happened with poll\n");
         
-        /*uint8_t code = 0;
-        uint32_t fsize = 13; 
-        char* payload = "Hello, world!";
-        pkt_response_t* pkt = pkt_response_new();
-        create_pkt_response(pkt, code, fsize, payload);
-        pkt_response_encode(pkt, buf);
-        if (send(new_fd, buf, fsize + RESPONSE_HEADER_LENGTH, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);*/
+        if (n_events > 0) {         
+            pollin_happended = fds[0].revents & POLLIN;
+            if (pollin_happended) { //new connection on server socket
+                do {
+                    addr_size = sizeof their_addr;
+                    new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
+                    if (new_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
+                    printf("Connection accepted\n");
 
+                    inet_ntop(their_addr.ss_family, 
+                        &(((struct sockaddr_in *)&their_addr))->sin_addr,
+                        s, sizeof s);
+                    printf("got connection from %s\n", s);
 
+                    pkt_request_t* pkt_request = pkt_request_new();
+                    recv_request_packet(pkt_request, new_fd);
+                    printf("packet file index : %u\n",pkt_request_get_findex(pkt_request));
+                    printf("packet key size : %u\n",pkt_request_get_ksize(pkt_request));
+                    printf("packet key : %s\n",pkt_request_get_key(pkt_request));
+                    push(&queue, new_fd,pkt_request);
+
+                    // Check if there is an available thread
+                    for (int j = 0; j < nb_threads; j++) {
+                        if (thread_status[j] == STOPPED && !isEmpty(&queue)) {
+                            thread_status[j] = RUNNING;
+                            node_t *node = pop(&queue);
+                            server_thread_args *args = (server_thread_args *) malloc(sizeof(server_thread_args));
+                            args->id = j;
+                            args->fd = node->fd;
+                            args->pkt = node->pkt;
+                            args->fsize = file_size;
+                            args->status = &(thread_status[j]);
+                            args->files = files;
+                            pthread_create(&threads[j], NULL, &start_server_thread, (void*) args);
+                            free(node);
+                        } 
+                    }
+
+                } while (new_fd != -1); // accept while there is new connections on listen queue
+            } else { //no new connection but we execute stored request
+                // Check if there is an available thread
+                for (int j = 0; j < nb_threads; j++) {
+                    if (thread_status[j] == STOPPED && !isEmpty(&queue)) {
+                        thread_status[j] = RUNNING;
+                        node_t *node = pop(&queue);
+                        server_thread_args *args = (server_thread_args *) malloc(sizeof(server_thread_args));
+                        args->id = j;
+                        args->fd = node->fd;
+                        args->pkt = node->pkt;
+                        args->fsize = file_size;
+                        args->status = &(thread_status[j]);
+                        args->files = files;
+                        pthread_create(&threads[j], NULL, &start_server_thread, (void*) args);
+                        free(node);
+                    } 
+                }
+            }
+            
+                
+        }
+    }
+
+    close(sockfd);
     // Free files
     for (int i = 0; i < 1000; i++) {
         free(files[i]);
-        for (int j = 0; j < file_size; j++) {
+        for (uint32_t j = 0; j < file_size; j++) {
             free(files[i][j]);
         }
     }
     free(files);
-    
 }

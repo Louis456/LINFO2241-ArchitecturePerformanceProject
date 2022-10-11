@@ -83,9 +83,9 @@ void* start_client(void* args) {
     
     // Generate random key and file index
     printf("Start generating a random key\n");
-    uint8_t *key = malloc(sizeof(uint8_t)*arguments->key_payload_length);       
+    char *key = malloc(sizeof(char)*arguments->key_payload_length);       
     for (uint64_t i = 0; i < arguments->key_payload_length; i++) {
-        uint8_t r = 1 + (random() % 255);
+        char r = (char) (1 + (random() % 255));
         key[i] = r;           
     }    
     printf("random key generated.\n");
@@ -132,4 +132,94 @@ uint32_t get_gaussian_number(uint32_t mean, uint32_t std) {
     }
     return randn;
     
+}
+
+
+bool isEmpty(request_queue_t* queue) 
+{
+    return queue->size == 0;
+}
+
+
+void push(request_queue_t* queue, int sockfd, pkt_request_t* pkt)
+{
+    node_t *new_node = malloc(sizeof(node_t));
+    if (new_node == NULL) fprintf(stderr, "Error malloc a new queue node\n");
+    
+    new_node->fd = sockfd;
+    new_node->pkt = pkt;
+    new_node->next = NULL;
+    
+    if (isEmpty(queue)) {
+        queue->head = new_node;
+        queue->tail = new_node;
+        queue->size = 1;
+    } else {
+        queue->tail->next = new_node;
+        queue->tail = new_node;
+        queue->size += 1;
+    }
+}
+ 
+node_t* pop(request_queue_t* queue)
+{
+    if (isEmpty(queue)) fprintf(stderr, "cannot pop an empty queue");
+
+    node_t *head = queue->head;
+    queue->head = queue->head->next;
+    queue->size -= 1;
+    return head;
+}
+
+void encrypt_file(char *encrypted_file, char **file, uint32_t file_size, char *key, uint32_t key_size) {
+    // Travel by sub squares of key size
+    uint32_t file_div_key = file_size / key_size;
+    for (uint32_t l = 0; l < file_div_key; l++) {
+        for (uint32_t m = 0; m < file_div_key; m++) { 
+            for (uint32_t i = 0; i < key_size; i++) {
+                for (uint32_t j = 0; j < key_size; j++) { 
+                    encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] = 0;
+                    for(uint32_t k = 0; k < key_size; k++) {
+                        encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k] * file[l * key_size + k][m * key_size + j];
+                    }
+                }
+            }
+        }
+    }
+}
+
+void* start_server_thread(void* args) {
+    server_thread_args *arguments = (server_thread_args *) args;
+
+    // Retrieve request values
+    pkt_request_t *pkt_request = arguments->pkt;
+    uint32_t file_index = pkt_request->file_index;
+    uint32_t key_size = pkt_request->key_size;
+    char* key = pkt_request->key;
+
+    // Get file and encrypt it
+    char **file = (arguments->files)[file_index];
+    uint32_t fsize = arguments->fsize;
+    char* encrypted_file = malloc(sizeof(char) * fsize * fsize);
+    encrypt_file(encrypted_file, file, fsize, key, key_size); 
+    pkt_request_del(pkt_request);
+    
+    // Create response packet
+    pkt_response_t* pkt_response = pkt_response_new();
+    uint8_t code = 0;
+    create_pkt_response(pkt_response, code, fsize, encrypted_file);
+
+    // Encode buffer and send it
+    uint32_t total_size = fsize + RESPONSE_HEADER_LENGTH;
+    char* buf = malloc(sizeof(char) * total_size);
+    pkt_response_encode(pkt_response, buf);
+    if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
+
+    // Free and close
+    pkt_response_del(pkt_response);
+    close(arguments->fd);
+    free(encrypted_file);
+    free(buf);
+    *(arguments->status) = STOPPED;
+    return NULL;
 }

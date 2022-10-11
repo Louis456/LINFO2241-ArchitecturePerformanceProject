@@ -2,24 +2,6 @@
 
 
 
-
-struct __attribute__((__packed__)) pkt_request {
-    
-    uint32_t file_index;
-    uint32_t key_size;
-    char* key;
-
-    
-};
-
-struct __attribute__((__packed__)) pkt_response {
-    /* HEADER */
-    
-    pkt_error_code error_code;  
-    uint32_t file_size;
-    char* encrypted_file;
-};
-
 pkt_request_t* pkt_request_new()
 {
     pkt_request_t* pkt;

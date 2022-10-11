@@ -14,14 +14,44 @@
 #include <netdb.h>
 #include <math.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 #include "packet_implem.h"
+
+typedef struct node_t node_t;
+
+typedef struct node_t {
+  int fd;
+  pkt_request_t *pkt;
+  node_t *next;
+} node_t;
+
+typedef struct {
+  node_t *head;
+  node_t *tail;
+  int size;
+} request_queue_t;
+
+typedef enum {
+	STOPPED = 0,
+	RUNNING
+} thread_status_code;
 
 typedef struct {
   struct addrinfo *serverinfo;
   uint64_t key_payload_length;
   uint32_t key_size;
 } client_thread_args;
+
+typedef struct {
+  uint8_t id;
+  int fd;
+  pkt_request_t *pkt;
+  thread_status_code *status;
+  uint32_t fsize;
+  char ***files;
+} server_thread_args;
+
 
 /* Fill the pkt_response structure from the given parameters */
 void create_pkt_response(pkt_response_t* pkt, pkt_error_code code, uint32_t fsize, char* file);
@@ -47,5 +77,16 @@ void* start_client(void* args);
  * Uses the Box-Muller algorithm 
  * @pre: rand should be initialised, e.g. using: srand(time(NULL)); */
 uint32_t get_gaussian_number(uint32_t mean, uint32_t std);
+
+
+bool isEmpty(request_queue_t* queue) ;
+
+void push(request_queue_t* queue, int sockfd, pkt_request_t* pkt);
+
+node_t* pop(request_queue_t* queue);
+
+void* start_server_thread(void* args);
+
+void encrypt_file(char *encrypted_file, char **file, uint32_t file_size, char *key, uint32_t key_size);
 
 #endif  /* __UTILS_H_ */

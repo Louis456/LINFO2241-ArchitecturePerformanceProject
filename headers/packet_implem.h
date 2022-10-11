@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct pkt_request pkt_request_t;
 typedef struct pkt_response pkt_response_t;
 
 #define RESPONSE_HEADER_LENGTH 5
@@ -27,8 +26,21 @@ typedef uint8_t pkt_error_code;
 
 typedef enum {
 	PKT_OK = 0,     /* Success */
-	E_NOMEM,        /* Not enough memory */
+	E_NOMEM         /* Not enough memory */
 } pkt_status_code;
+
+struct __attribute__((__packed__)) pkt_request {
+    uint32_t file_index;
+    uint32_t key_size;
+    char* key;
+};
+typedef struct pkt_request pkt_request_t;
+
+struct __attribute__((__packed__)) pkt_response {
+    pkt_error_code error_code;  
+    uint32_t file_size;
+    char* encrypted_file;
+};
 
 /* Initialize a new struct pkt_request
  * @return: NULL if something went wrong */
