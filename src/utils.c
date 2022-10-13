@@ -13,21 +13,25 @@ void create_pkt_response(pkt_response_t* pkt, pkt_error_code code, uint32_t fsiz
     if (status_code != PKT_OK) fprintf(stderr, "error setting the file payload in response packet");
 }
 
-void recv_request_packet(pkt_request_t* pkt, int sockfd) {
+pkt_status_code recv_request_packet(pkt_request_t* pkt, int sockfd, uint32_t file_size) {
     char buf_header[REQUEST_HEADER_LENGTH+1];
     int numbytes;
     if ((numbytes = recv(sockfd, buf_header, REQUEST_HEADER_LENGTH, 0)) == -1) {
         fprintf(stderr, "Error while receiving header from client\n errno: %d\n", errno);
     }
 
-    pkt_request_decode(buf_header,pkt,1);
+    pkt_request_decode(buf_header,pkt,true);
+    if (file_size % pkt_request_get_ksize(pkt) != 0) {
+        return E_KEY_SIZE;
+    }
     uint32_t key_payload_length = pkt_request_get_ksize(pkt)*pkt_request_get_ksize(pkt);
 
     char buf_key[key_payload_length];
     if ((numbytes = recv(sockfd, buf_key, key_payload_length, 0)) == -1) {
         fprintf(stderr, "Error while receiving payload from client\n errno: %d\n", errno);
     }
-    pkt_request_decode(buf_key,pkt,0);
+    pkt_request_decode(buf_key,pkt,false);
+    return PKT_OK;
 }
 
 void create_pkt_request(pkt_request_t* pkt, uint32_t findex, uint32_t ksize, char *key)
@@ -49,13 +53,13 @@ void recv_response_packet(pkt_response_t* pkt, int sockfd) {
     if ((numbytes = recv(sockfd, buf_header, RESPONSE_HEADER_LENGTH, 0)) == -1) {
         fprintf(stderr, "Error while receiving header from server\n errno: %d\n", errno);
     }
-    pkt_response_decode(buf_header,pkt,1);
+    pkt_response_decode(buf_header,pkt,true);
 
     char buf_file[pkt_response_get_fsize(pkt)];
     if ((numbytes = recv(sockfd, buf_file, pkt_response_get_fsize(pkt), 0)) == -1) {
         fprintf(stderr, "Error while receiving file from server\n errno: %d\n", errno);
     }
-    pkt_response_decode(buf_file,pkt,0);
+    pkt_response_decode(buf_file,pkt,false);
 }
 
 void get_current_clock(struct timeval *timestamp) {
@@ -71,6 +75,10 @@ uint64_t get_ms(struct timeval *timestamp) {
     return timestamp->tv_sec * 1000 + timestamp->tv_usec / 1000;
 }
 
+uint64_t get_us(struct timeval *timestamp) {
+    return timestamp->tv_sec * 1000000 + timestamp->tv_usec;
+}
+
 void* start_client(void* args) {
     client_thread_args *arguments = (client_thread_args *) args;
     int sockfd = socket(arguments->serverinfo->ai_family, arguments->serverinfo->ai_socktype, arguments->serverinfo->ai_protocol);
@@ -82,14 +90,14 @@ void* start_client(void* args) {
     }
     
     // Generate random key and file index
-    printf("Start generating a random key\n");
+    //printf("Start generating a random key\n");
     char *key = malloc(sizeof(char)*arguments->key_payload_length);   
     if (key == NULL) fprintf(stderr, "Error malloc: key payload\n");
     for (uint64_t i = 0; i < arguments->key_payload_length; i++) {
         char r = (char) (1 + (random() % 255));
         key[i] = r;           
     }    
-    printf("random key generated.\n");
+    //printf("random key generated.\n");
     uint32_t file_index = (random() % 1000);
 
     // Build packet
@@ -102,15 +110,30 @@ void* start_client(void* args) {
     // Send packet to server
     if (send(sockfd, buf_request, arguments->key_payload_length+REQUEST_HEADER_LENGTH, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
 
+    // Start timer
+    struct timeval start_at;
+    get_current_clock(&start_at);
+
     // Read the response to create a packet, then delete it
     pkt_response_t *response_pkt = pkt_response_new();
     if (response_pkt== NULL) fprintf(stderr, "Error while making a new response packet in start_client\n");
     recv_response_packet(response_pkt, sockfd);
     printf("received encrypted file number : %d of size %d\n",file_index,pkt_response_get_fsize(response_pkt));
+
+    *(arguments->bytes_sent_rcvd) = arguments->key_payload_length + REQUEST_HEADER_LENGTH + RESPONSE_HEADER_LENGTH + pkt_response_get_fsize(response_pkt);
+
+    // Stop timer and store elapsed time in response_time
+    struct timeval end_at;
+    get_current_clock(&end_at);
+    struct timeval diff_time;
+    timersub(&end_at, &start_at, &diff_time);
+    *(arguments->response_time) = get_ms(&diff_time);
+
     pkt_response_del(response_pkt);
 
     close(sockfd);
     free(key);
+    free(arguments);
 
     return NULL;
 }
@@ -143,13 +166,12 @@ bool isEmpty(request_queue_t* queue)
 }
 
 
-void push(request_queue_t* queue, int sockfd, pkt_request_t* pkt)
+void push(request_queue_t* queue, int sockfd)
 {
     node_t *new_node = malloc(sizeof(node_t));
     if (new_node == NULL) fprintf(stderr, "Error malloc a new queue node\n");
     
     new_node->fd = sockfd;
-    new_node->pkt = pkt;
     new_node->next = NULL;
     
     if (isEmpty(queue)) {
@@ -191,17 +213,35 @@ void encrypt_file(char *encrypted_file, char **file, uint32_t file_size, char *k
 }
 
 void* start_server_thread(void* args) {
+    // Retrieve arguments
     server_thread_args *arguments = (server_thread_args *) args;
-
-    // Retrieve request values
-    pkt_request_t *pkt_request = arguments->pkt;
+    uint32_t fsize = arguments->fsize;
+    
+    // Read client request
+    printf("file descriptor beginning in thread[%d] : %d\n", arguments->id,arguments->fd);
+    pkt_request_t* pkt_request = pkt_request_new();
+    if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet in server thread\n");
+    if (recv_request_packet(pkt_request, arguments->fd, fsize) != PKT_OK) {
+        // Invalid key size
+        fprintf(stderr, "Key size must divide the file size\n");
+        pkt_response_t* pkt_response = pkt_response_new();
+        if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
+        char error_message[] = "invalid key size";
+        uint8_t error_message_size = strlen(error_message)+1;
+        uint8_t error_code = 1;
+        create_pkt_response(pkt_response, error_code, error_message_size, error_message);
+        u_int8_t total_size = RESPONSE_HEADER_LENGTH + error_message_size;
+        char* buf = malloc(sizeof(char) * total_size);
+        if (buf == NULL) fprintf(stderr, "Error malloc: buf response invalid key\n");
+        if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed with invalid key size\n errno: %d\n", errno);
+        return NULL;
+    }
     uint32_t file_index = pkt_request->file_index;
     uint32_t key_size = pkt_request->key_size;
     char* key = pkt_request->key;
 
     // Get file and encrypt it
     char **file = (arguments->files)[file_index];
-    uint32_t fsize = arguments->fsize;
     char* encrypted_file = malloc(sizeof(char) * fsize * fsize);
     if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
     encrypt_file(encrypted_file, file, fsize, key, key_size); 
@@ -218,6 +258,7 @@ void* start_server_thread(void* args) {
     char* buf = malloc(sizeof(char) * total_size);
     if (buf == NULL) fprintf(stderr, "Error malloc: buf response\n");
     pkt_response_encode(pkt_response, buf);
+    printf("file descriptor end in thread[%d] : %d\n", arguments->id,arguments->fd);
     if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
 
     // Free and close
@@ -225,7 +266,37 @@ void* start_server_thread(void* args) {
     close(arguments->fd);
     free(encrypted_file);
     free(buf);
-    printf("Thread %d STOP\n", arguments->id);
+    //printf("Thread %d STOP\n", arguments->id);
     *(arguments->status) = STOPPED;
     return NULL;
 }
+
+uint32_t get_sum(uint32_t *values, uint32_t length) {
+    if (length == 0 || values == NULL) return 0;   
+    uint32_t sum = 0;
+    for (uint32_t i = 0; i < length; i++) {        
+        sum += values[i];
+    }
+    return sum;
+}
+
+uint32_t get_mean(uint32_t *values, uint32_t length) {
+    if (length == 0 || values == NULL) return 0;
+    uint32_t sum = get_sum(values, length);
+    return sum/length;
+}
+
+uint32_t get_variance(uint32_t *values, uint32_t length) {
+    if (length == 0 || values == NULL) return 0;
+    uint32_t mean = get_mean(values, length);
+    uint32_t sum = 0;
+    for (uint32_t i = 0; i < length; i++) {
+        sum += pow((values[i] - mean), 2);
+    }
+    return sum / length;
+}
+
+uint32_t get_std(uint32_t *values, uint32_t length) {
+    return sqrt(get_variance(values, length));
+}
+

@@ -22,7 +22,6 @@ typedef struct node_t node_t;
 
 typedef struct node_t {
   int fd;
-  pkt_request_t *pkt;
   node_t *next;
 } node_t;
 
@@ -41,6 +40,8 @@ typedef struct {
   struct addrinfo *serverinfo;
   uint64_t key_payload_length;
   uint32_t key_size;
+  uint32_t *response_time;
+  uint32_t *bytes_sent_rcvd;
 } client_thread_args;
 
 typedef struct {
@@ -57,7 +58,7 @@ typedef struct {
 void create_pkt_response(pkt_response_t* pkt, pkt_error_code code, uint32_t fsize, char* file);
 
 /* Read from sockfd to create a response packet */
-void recv_request_packet(pkt_request_t* pkt, int sockfd);
+pkt_status_code recv_request_packet(pkt_request_t* pkt, int sockfd, uint32_t file_size);
 
 /* Fill the pkt_request structure from the given parameters */
 void create_pkt_request(pkt_request_t* pkt, uint32_t findex, uint32_t ksize, char *key);
@@ -71,6 +72,9 @@ void get_current_clock(struct timeval *timestamp);
 /* Return ms from timeval structure */
 uint64_t get_ms(struct timeval *timestamp);
 
+/* Return us from timeval structure */
+uint64_t get_us(struct timeval *timestamp);
+
 void* start_client(void* args);
 
 /* Get random number following a normal distribution from paramter's mean and std. 
@@ -81,12 +85,20 @@ uint32_t get_gaussian_number(double mean, double std);
 
 bool isEmpty(request_queue_t* queue) ;
 
-void push(request_queue_t* queue, int sockfd, pkt_request_t* pkt);
+void push(request_queue_t* queue, int sockfd);
 
 node_t* pop(request_queue_t* queue);
 
 void* start_server_thread(void* args);
 
 void encrypt_file(char *encrypted_file, char **file, uint32_t file_size, char *key, uint32_t key_size);
+
+uint32_t get_sum(uint32_t *values, uint32_t length);
+
+uint32_t get_mean(uint32_t *values, uint32_t length);
+
+uint32_t get_variance(uint32_t *values, uint32_t length);
+
+uint32_t get_std(uint32_t *values, uint32_t length);
 
 #endif  /* __UTILS_H_ */

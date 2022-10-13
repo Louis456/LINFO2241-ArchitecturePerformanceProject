@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 typedef struct pkt_response pkt_response_t;
 
@@ -26,7 +27,8 @@ typedef uint8_t pkt_error_code;
 
 typedef enum {
 	PKT_OK = 0,     /* Success */
-	E_NOMEM         /* Not enough memory */
+	E_NOMEM,        /* Not enough memory */
+    E_KEY_SIZE
 } pkt_status_code;
 
 struct __attribute__((__packed__)) pkt_request {
@@ -61,14 +63,14 @@ void pkt_response_del(pkt_response_t *pkt);
  * @len: number of received bytes
  * @pkt: a valid pkt_request_t struct in which the data will be stored
 */
-void pkt_request_decode(const char *data, pkt_request_t *pkt, uint8_t header);
+void pkt_request_decode(const char *data, pkt_request_t *pkt, bool header);
 
 /* Decode the data from the buffer into a pkt_response structure.
  * @data: array of bytes 
  * @len: number of received bytes
  * @pkt: a valid pkt_response_t struct in which the data will be stored
 */
-void pkt_response_decode(const char *data, pkt_response_t *pkt, uint8_t header);
+void pkt_response_decode(const char *data, pkt_response_t *pkt, bool header);
 
 /* Encode a pkt_request into a buffer, in network-byte-order.
  * @pkt: structure to be decoded

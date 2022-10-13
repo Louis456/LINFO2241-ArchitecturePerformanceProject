@@ -38,21 +38,21 @@ void pkt_response_del(pkt_response_t *pkt)
     pkt = NULL;
 }
 
-void pkt_request_decode(const char *data, pkt_request_t *pkt, uint8_t header)
+void pkt_request_decode(const char *data, pkt_request_t *pkt, bool header)
 {
-    if (header == 1){
+    if (header){
         pkt_request_set_findex(pkt, ntohl(((uint32_t *) (data))[0]));
         pkt_request_set_ksize(pkt, ntohl(((uint32_t *) (data))[1]));
-    } else if (header == 0) {
+    } else {
         uint64_t key_length = pkt_request_get_ksize(pkt) * pkt_request_get_ksize(pkt);
         pkt_request_set_key(pkt, data, key_length);
     }
     
 }
 
-void pkt_response_decode(const char *data, pkt_response_t *pkt, uint8_t header)
+void pkt_response_decode(const char *data, pkt_response_t *pkt, bool header)
 {
-    if (header == 1) {
+    if (header) {
         pkt_response_set_errcode(pkt, ((uint8_t *) (data))[0]);
         pkt_response_set_fsize(pkt, ntohl(((uint32_t *) (data+1))[0]));
     } else {

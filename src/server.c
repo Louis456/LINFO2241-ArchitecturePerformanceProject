@@ -23,7 +23,6 @@ int print_usage(char *prog_name) {
 
 int main(int argc, char **argv) {
     int opt;
-
     char *listen_port;
     uint32_t file_size;
     uint16_t nb_threads;
@@ -52,6 +51,11 @@ int main(int argc, char **argv) {
 
     if (optind != argc) { //TODO: check and modify if needed
         fprintf(stderr, "Unexpected number of positional arguments\n");
+        return 1;
+    }
+
+    if ((file_size <= 0) || ((file_size & (file_size - 1)) != 0)) { // Check file_size is a power of 2
+        fprintf(stderr, "File size must be a power of 2\n");
         return 1;
     }
 
@@ -108,6 +112,10 @@ int main(int argc, char **argv) {
 
     // Init thread pool and its status
     pthread_t threads[nb_threads];
+    bool thread_activated[nb_threads];
+    for (int j = 0; j < nb_threads; j++) {
+        thread_activated[j] = false;
+    }
     thread_status_code thread_status[nb_threads]; 
     for (int j = 0; j < nb_threads; j++) {
         thread_status[j] = STOPPED;
@@ -145,16 +153,12 @@ int main(int argc, char **argv) {
                     inet_ntop(their_addr.ss_family, 
                         &(((struct sockaddr_in *)&their_addr))->sin_addr,
                         s, sizeof s);
-                    printf("got connection from %s\n", s);
-
-                    pkt_request_t* pkt_request = pkt_request_new();
-                    if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet in main server function\n");
-                    recv_request_packet(pkt_request, new_fd);
-                    printf("packet file index : %u\n",pkt_request_get_findex(pkt_request));
-                    printf("packet key size : %u\n",pkt_request_get_ksize(pkt_request));
+                    //printf("got connection from %s\n", s);
+                    //printf("packet file index : %u\n",pkt_request_get_findex(pkt_request));
+                    //printf("packet key size : %u\n",pkt_request_get_ksize(pkt_request));
                     //printf("packet key : %s\n",pkt_request_get_key(pkt_request));
-                    push(&queue, new_fd,pkt_request);
-                    printf("Packet added, queue size: %d\n", queue.size);
+                    push(&queue, new_fd);
+                    //printf("Packet added, queue size: %d\n", queue.size);
 
                     // Check if there is an available thread
                     for (int j = 0; j < nb_threads; j++) {
@@ -165,12 +169,12 @@ int main(int argc, char **argv) {
                             if (args == NULL) fprintf(stderr, "Error malloc server thread args\n");
                             args->id = j;
                             args->fd = node->fd;
-                            args->pkt = node->pkt;
                             args->fsize = file_size;
                             args->status = &(thread_status[j]);
                             args->files = files;
                             pthread_create(&threads[j], NULL, &start_server_thread, (void*) args);
-                            printf("Thread %d started\n", j);
+                            thread_activated[j] = true;
+                            //printf("Thread %d started\n", j);
                             free(node);
                         } 
                     }
@@ -189,12 +193,12 @@ int main(int argc, char **argv) {
                 if (args == NULL) fprintf(stderr, "Error malloc server thread args\n");
                 args->id = j;
                 args->fd = node->fd;
-                args->pkt = node->pkt;
                 args->fsize = file_size;
                 args->status = &(thread_status[j]);
                 args->files = files;
                 pthread_create(&threads[j], NULL, &start_server_thread, (void*) args);
-                printf("Thread %d started\n", j);
+                thread_activated[j] = true;
+                //printf("Thread %d started\n", j);
                 free(node);
             } 
         }
@@ -215,8 +219,10 @@ int main(int argc, char **argv) {
     }
     free(files);
 
-    for (uint16_t j = 0; j < nb_threads; j++){
-        pthread_join(threads[j], NULL);
-    }
+    return 1;
+
     
+    for (uint16_t j = 0; j < nb_threads; j++){
+        if (thread_activated[j]) pthread_join(threads[j], NULL);
+    }
 }
