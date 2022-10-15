@@ -155,6 +155,8 @@ int main(int argc, char **argv) {
 
     }
 
+    printf("waiting for thread to join\n");
+
     for (uint32_t i = 0; i < thread_id; i++){
         pthread_join(threads[i], NULL);
     }
@@ -168,7 +170,7 @@ int main(int argc, char **argv) {
     // compute mean throughput
     double throughput = (double) (get_sum(bytes_sent_rcvd, thread_id)) / (double) (tot_time*1000); //Bytes/s
 
-    printf("Mean throughput: %f\n",throughput);
+    printf("Mean throughput: %f Gbits/s\n",throughput);
 
     // Response Times
     printf("Response times: ");

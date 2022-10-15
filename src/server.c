@@ -109,6 +109,8 @@ int main(int argc, char **argv) {
     if (listenerror == -1) fprintf(stderr, "listen failed\n errno: %d\n", errno);
     else printf("Server listening\n");
 
+    printf("EVENT server_listening\n");
+
 
     // Init thread pool and its status
     pthread_t threads[nb_threads];
@@ -158,7 +160,7 @@ int main(int argc, char **argv) {
                     //printf("packet key size : %u\n",pkt_request_get_ksize(pkt_request));
                     //printf("packet key : %s\n",pkt_request_get_key(pkt_request));
                     push(&queue, new_fd);
-                    //printf("Packet added, queue size: %d\n", queue.size);
+                    printf("Packet added, queue size: %d\n", queue.size);
 
                     // Check if there is an available thread
                     for (int j = 0; j < nb_threads; j++) {
@@ -208,6 +210,10 @@ int main(int argc, char **argv) {
         get_current_clock(&now);
         timersub(&now, &start_time, &diff_time);
     }
+    
+    for (uint16_t j = 0; j < nb_threads; j++){
+        if (thread_activated[j]) pthread_join(threads[j], NULL);
+    }
 
     close(sockfd);
     // Free files
@@ -220,9 +226,4 @@ int main(int argc, char **argv) {
     free(files);
 
     return 1;
-
-    
-    for (uint16_t j = 0; j < nb_threads; j++){
-        if (thread_activated[j]) pthread_join(threads[j], NULL);
-    }
 }

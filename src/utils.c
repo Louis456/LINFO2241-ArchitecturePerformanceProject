@@ -131,7 +131,9 @@ void* start_client(void* args) {
 
     pkt_response_del(response_pkt);
 
+    printf("before closing socket\n");
     close(sockfd);
+    printf("after closing socket\n");
     free(key);
     free(arguments);
 
