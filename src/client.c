@@ -168,16 +168,19 @@ int main(int argc, char **argv) {
     uint64_t tot_time = get_ms(&total_time);
     
     // compute mean throughput
-    double throughput = (double) (get_sum(bytes_sent_rcvd, thread_id)) / (double) (tot_time*1000); //Bytes/s
+    double throughput_bytes = (((double) get_sum(bytes_sent_rcvd, thread_id)) / tot_time) * 1000; // Bytes/s
+    double throughput_packets = (((double) thread_id) / tot_time) * 1000; // Packets/s
 
-    printf("Mean throughput: %f Gbits/s\n",throughput);
+    printf("mean throughput bytes %f\n", throughput_bytes);
+    printf("mean throughput packets %f\n", throughput_packets);
+
 
     // Response Times
-    printf("Response times: ");
+    printf("response times: ");
     if (thread_id > 1) {
         for (uint32_t i = 0; i < thread_id - 1; i++) printf("%d, ", response_times[i]);
     }
     printf("%d\n", response_times[thread_id - 1]);
-    printf("Response times mean: %d\n", get_mean(response_times, thread_id));
-    printf("Response times std: %d\n", get_std(response_times, thread_id));
+    printf("mean response time %f\n", get_mean_double(response_times, thread_id));
+    printf("response times std: %f\n", get_std_double(response_times, thread_id));
 }

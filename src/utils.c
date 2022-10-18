@@ -118,7 +118,7 @@ void* start_client(void* args) {
     pkt_response_t *response_pkt = pkt_response_new();
     if (response_pkt== NULL) fprintf(stderr, "Error while making a new response packet in start_client\n");
     recv_response_packet(response_pkt, sockfd);
-    printf("received encrypted file number : %d of size %d\n",file_index,pkt_response_get_fsize(response_pkt));
+    //printf("received encrypted file number : %d of size %d\n",file_index,pkt_response_get_fsize(response_pkt));
 
     *(arguments->bytes_sent_rcvd) = arguments->key_payload_length + REQUEST_HEADER_LENGTH + RESPONSE_HEADER_LENGTH + pkt_response_get_fsize(response_pkt);
 
@@ -131,9 +131,9 @@ void* start_client(void* args) {
 
     pkt_response_del(response_pkt);
 
-    printf("before closing socket\n");
+    //printf("before closing socket\n");
     close(sockfd);
-    printf("after closing socket\n");
+    //printf("after closing socket\n");
     free(key);
     free(arguments);
 
@@ -282,9 +282,24 @@ uint32_t get_sum(uint32_t *values, uint32_t length) {
     return sum;
 }
 
+double get_sum_double(uint32_t *values, uint32_t length) {
+    if (length == 0 || values == NULL) return 0;   
+    double sum = 0;
+    for (uint32_t i = 0; i < length; i++) {        
+        sum += values[i];
+    }
+    return sum;
+}
+
 uint32_t get_mean(uint32_t *values, uint32_t length) {
     if (length == 0 || values == NULL) return 0;
     uint32_t sum = get_sum(values, length);
+    return sum/length;
+}
+
+double get_mean_double(uint32_t *values, uint32_t length) {
+    if (length == 0 || values == NULL) return 0;
+    double sum = get_sum_double(values, length);
     return sum/length;
 }
 
@@ -298,7 +313,21 @@ uint32_t get_variance(uint32_t *values, uint32_t length) {
     return sum / length;
 }
 
+double get_variance_double(uint32_t *values, uint32_t length) {
+    if (length == 0 || values == NULL) return 0;
+    double mean = get_mean_double(values, length);
+    double sum = 0;
+    for (uint32_t i = 0; i < length; i++) {
+        sum += pow((values[i] - mean), 2);
+    }
+    return sum / length;
+}
+
 uint32_t get_std(uint32_t *values, uint32_t length) {
     return sqrt(get_variance(values, length));
+}
+
+double get_std_double(uint32_t *values, uint32_t length) {
+    return sqrt(get_variance_double(values, length));
 }
 

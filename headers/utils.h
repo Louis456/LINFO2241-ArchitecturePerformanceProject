@@ -101,4 +101,12 @@ uint32_t get_variance(uint32_t *values, uint32_t length);
 
 uint32_t get_std(uint32_t *values, uint32_t length);
 
+double get_sum_double(uint32_t *values, uint32_t length);
+
+double get_mean_double(uint32_t *values, uint32_t length);
+
+double get_variance_double(uint32_t *values, uint32_t length);
+
+double get_std_double(uint32_t *values, uint32_t length);
+
 #endif  /* __UTILS_H_ */

@@ -1,0 +1,3 @@
+fsize,ksize,request_rate,thread,throughput
+256,128,100,4,99.740156
+256,128,100,4,97.910448

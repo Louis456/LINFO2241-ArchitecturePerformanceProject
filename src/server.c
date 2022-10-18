@@ -86,6 +86,9 @@ int main(int argc, char **argv) {
     struct addrinfo hints;
     struct addrinfo *serverinfo;  // will point to the results
     int sockfd;
+    int optval = 1;
+    int sockopt;
+
     char s[INET6_ADDRSTRLEN];
 
     memset(&hints, 0, sizeof hints); // make sure the struct is empty
@@ -101,6 +104,11 @@ int main(int argc, char **argv) {
 
     sockfd = socket(serverinfo->ai_family,serverinfo->ai_socktype,serverinfo->ai_protocol);
     if (sockfd == -1) fprintf(stderr, "Error while creating the socket\n errno: %d\n", errno);
+
+    sockopt = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+    if (sockopt == -1) fprintf(stderr, "Error while setting socket option\n errno: %d\n", errno);
+    sockopt = setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+    if (sockopt == -1) fprintf(stderr, "Error while setting socket option\n errno: %d\n", errno);
 
     int binderror = bind(sockfd, serverinfo->ai_addr, serverinfo->ai_addrlen);
     if (binderror == -1) fprintf(stderr, "Error while binding the socket\n errno: %d\n", errno);
@@ -159,7 +167,7 @@ int main(int argc, char **argv) {
                     //printf("packet file index : %u\n",pkt_request_get_findex(pkt_request));
                     //printf("packet key size : %u\n",pkt_request_get_ksize(pkt_request));
                     //printf("packet key : %s\n",pkt_request_get_key(pkt_request));
-                    push(&queue, new_fd);
+                    if (new_fd != -1) push(&queue, new_fd);
                     printf("Packet added, queue size: %d\n", queue.size);
 
                     // Check if there is an available thread
