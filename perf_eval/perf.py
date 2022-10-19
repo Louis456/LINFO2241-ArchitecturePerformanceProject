@@ -8,7 +8,7 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-from graph import plot
+
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = "2241"
@@ -16,7 +16,8 @@ DURATION = 5 # seconds
 DAY_TIME = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
 FILENAME_THROUGHPUT = "data/"+DAY_TIME+"_throughput.csv"
 FILENAME_RESPONSE_TIME = "data/"+DAY_TIME+"_response_time.csv"
-PARENT_PATH = Path().parent.absolute()
+#PARENT_PATH = Path().parent.absolute()
+PARENT_PATH = Path().resolve().parent
 
 def init():
     # Create the files in which the results will be stored
@@ -46,12 +47,14 @@ def script_client(ksize, request_rate):
 if __name__ == "__main__":
     #2^k e
     FSIZES = (256,512)
-    KSIZES = (64,128)
+    KSIZES = (16,32)
     REQUEST_RATES = (100,200)
     THREADS = (2,4)
     NB_ITERATION = 5
 
     init()
+
+    it = 1
 
     for fsize in FSIZES:
         for ksize in KSIZES:
@@ -62,13 +65,14 @@ if __name__ == "__main__":
                     response_time = np.empty(NB_ITERATION, dtype=float)
                     for i in range(NB_ITERATION):
                         server_proc = script_server(thread, fsize)
-                        time.sleep(5)
+                        time.sleep(4)
                         client_proc = script_client(ksize, request_rate)
 
                         server_output = server_proc.communicate()[0].decode()
                         client_output = client_proc.communicate()[0].decode()
                         #print("client output : ", client_output)
-                        print("==============")
+                        print(it)
+                        it += 1
                         #print("server output : ", server_output)
 
                         

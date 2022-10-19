@@ -62,8 +62,8 @@ def features_importance(df, response_variable):
     return c.feature_importances_
 
 if __name__ == "__main__":
-    FILENAME_THROUGHPUT = "data/18_10_2022_12_05_41_throughput.csv"
-    FILENAME_RESPONSE_TIME = "data/18_10_2022_12_05_41_response_time.csv"
+    FILENAME_THROUGHPUT = "data/19_10_2022_16_51_50_throughput.csv"
+    FILENAME_RESPONSE_TIME = "data/19_10_2022_16_51_50_response_time.csv"
     df_throughput = pd.read_csv(FILENAME_THROUGHPUT)
     df_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
     print(df_throughput.dtypes)
@@ -106,6 +106,8 @@ if __name__ == "__main__":
     title = "Mean response time versus number of threads"
     filename = "data/mean_response_time_vs_threads"
     barplot(xs, ys, stds, labels, label, x_axis_name, y_axis_name, title, filename)
+
+    
 
     print("features importance of throughput", features_importance(df_throughput,"throughput"))
 

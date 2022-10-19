@@ -90,14 +90,12 @@ void* start_client(void* args) {
     }
     
     // Generate random key and file index
-    //printf("Start generating a random key\n");
     char *key = malloc(sizeof(char)*arguments->key_payload_length);   
     if (key == NULL) fprintf(stderr, "Error malloc: key payload\n");
     for (uint64_t i = 0; i < arguments->key_payload_length; i++) {
         char r = (char) (1 + (random() % 255));
         key[i] = r;           
     }    
-    //printf("random key generated.\n");
     uint32_t file_index = (random() % 1000);
 
     // Build packet
@@ -106,6 +104,7 @@ void* start_client(void* args) {
     create_pkt_request(pkt, file_index, arguments->key_size, (char *) key);
     char buf_request[arguments->key_payload_length + REQUEST_HEADER_LENGTH];
     pkt_request_encode(pkt, buf_request);
+    pkt_request_del(pkt);
     
     // Send packet to server
     if (send(sockfd, buf_request, arguments->key_payload_length+REQUEST_HEADER_LENGTH, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
@@ -118,7 +117,6 @@ void* start_client(void* args) {
     pkt_response_t *response_pkt = pkt_response_new();
     if (response_pkt== NULL) fprintf(stderr, "Error while making a new response packet in start_client\n");
     recv_response_packet(response_pkt, sockfd);
-    //printf("received encrypted file number : %d of size %d\n",file_index,pkt_response_get_fsize(response_pkt));
 
     *(arguments->bytes_sent_rcvd) = arguments->key_payload_length + REQUEST_HEADER_LENGTH + RESPONSE_HEADER_LENGTH + pkt_response_get_fsize(response_pkt);
 
@@ -127,17 +125,14 @@ void* start_client(void* args) {
     get_current_clock(&end_at);
     struct timeval diff_time;
     timersub(&end_at, &start_at, &diff_time);
-    *(arguments->response_time) = get_ms(&diff_time);
+    *(arguments->response_time) = get_us(&diff_time);
 
     pkt_response_del(response_pkt);
 
-    //printf("before closing socket\n");
     close(sockfd);
-    //printf("after closing socket\n");
     free(key);
     free(arguments);
-
-    return NULL;
+    pthread_exit(0);
 }
 
 uint32_t get_gaussian_number(double mean, double std) {
@@ -220,7 +215,6 @@ void* start_server_thread(void* args) {
     uint32_t fsize = arguments->fsize;
     
     // Read client request
-    printf("file descriptor beginning in thread[%d] : %d\n", arguments->id,arguments->fd);
     pkt_request_t* pkt_request = pkt_request_new();
     if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet in server thread\n");
     if (recv_request_packet(pkt_request, arguments->fd, fsize) != PKT_OK) {
@@ -236,6 +230,8 @@ void* start_server_thread(void* args) {
         char* buf = malloc(sizeof(char) * total_size);
         if (buf == NULL) fprintf(stderr, "Error malloc: buf response invalid key\n");
         if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed with invalid key size\n errno: %d\n", errno);
+        free(buf);
+        pkt_response_del(pkt_response);
         return NULL;
     }
     uint32_t file_index = pkt_request->file_index;
@@ -260,7 +256,6 @@ void* start_server_thread(void* args) {
     char* buf = malloc(sizeof(char) * total_size);
     if (buf == NULL) fprintf(stderr, "Error malloc: buf response\n");
     pkt_response_encode(pkt_response, buf);
-    printf("file descriptor end in thread[%d] : %d\n", arguments->id,arguments->fd);
     if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
 
     // Free and close
@@ -268,9 +263,9 @@ void* start_server_thread(void* args) {
     close(arguments->fd);
     free(encrypted_file);
     free(buf);
-    //printf("Thread %d STOP\n", arguments->id);
     *(arguments->status) = STOPPED;
-    return NULL;
+    free(arguments);
+    pthread_exit(0);
 }
 
 uint32_t get_sum(uint32_t *values, uint32_t length) {
