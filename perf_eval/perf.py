@@ -15,14 +15,11 @@ DURATION = 10 # seconds
 #PARENT_PATH = Path().parent.absolute()
 PARENT_PATH = Path().resolve().parent
 
-def init():
+def init(FILENAME_THROUGHPUT, FILENAME_RESPONSE_TIME):
     # Create the files in which the results will be stored
     if not os.path.exists('data'):
         os.makedirs('data')
 
-    DAY_TIME = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-    FILENAME_THROUGHPUT = "data/"+DAY_TIME+"_throughput.csv"
-    FILENAME_RESPONSE_TIME = "data/"+DAY_TIME+"_response_time.csv"
     with open(FILENAME_THROUGHPUT, 'w') as file:
         file.write("fsize,ksize,request_rate,thread,throughput\n")
     
@@ -42,19 +39,22 @@ def script_client(ksize, request_rate):
     process = subprocess.Popen(['./client', '-k', str(ksize), '-r', str(request_rate), '-t', str(DURATION), SERVER_IP+':'+SERVER_PORT], stdout=subprocess.PIPE, cwd=PARENT_PATH)
     return process
 
-def start_test(fsizes:list, ksizes:list, req_rates:list, threads:list):
-    init()
+def start_test(fsizes:list, ksizes:list, req_rates:list, threads:list, nb_iteration):
+    DAY_TIME = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+    FILENAME_THROUGHPUT = "data/"+DAY_TIME+"_throughput.csv"
+    FILENAME_RESPONSE_TIME = "data/"+DAY_TIME+"_response_time.csv"
+    init(FILENAME_THROUGHPUT,FILENAME_RESPONSE_TIME)
 
     it = 1
 
-    for fsize in FSIZES:
-        for ksize in KSIZES:
-            for request_rate in REQUEST_RATES:
-                for thread in THREADS:
-                    throughput_bytes = np.empty(NB_ITERATION, dtype=float)
-                    throughput_packets = np.empty(NB_ITERATION, dtype=float)
-                    response_time = np.empty(NB_ITERATION, dtype=float)
-                    for i in range(NB_ITERATION):
+    for fsize in fsizes:
+        for ksize in ksizes:
+            for request_rate in req_rates:
+                for thread in threads:
+                    throughput_bytes = np.empty(nb_iteration, dtype=float)
+                    throughput_packets = np.empty(nb_iteration, dtype=float)
+                    response_time = np.empty(nb_iteration, dtype=float)
+                    for i in range(nb_iteration):
                         server_proc = script_server(thread, fsize)
                         time.sleep(4)
                         client_proc = script_client(ksize, request_rate)
@@ -80,13 +80,9 @@ def start_test(fsizes:list, ksizes:list, req_rates:list, threads:list):
 
 if __name__ == "__main__":
     #2^k e
-    FSIZES = (128,256)
-    KSIZES = (32,64)
-    REQUEST_RATES = (150,300)
-    THREADS = (2,4)
-    NB_ITERATION = 1
+    
 
-    start_test([128,256],[32,64],[150,300],[2,4])
+    start_test([128,256],[32,64],[150,300],[2,4], 1)
 
     
                         
