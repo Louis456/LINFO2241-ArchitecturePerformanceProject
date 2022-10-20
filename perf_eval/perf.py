@@ -47,7 +47,7 @@ if __name__ == "__main__":
     #2^k e
     FSIZES = (128,256)
     KSIZES = (32,64)
-    REQUEST_RATES = (200,400)
+    REQUEST_RATES = (150,300)
     THREADS = (2,4)
     NB_ITERATION = 1
 
