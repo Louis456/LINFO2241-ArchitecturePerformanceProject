@@ -4,7 +4,6 @@ import numpy as np
 import subprocess
 import time
 import re
-import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
