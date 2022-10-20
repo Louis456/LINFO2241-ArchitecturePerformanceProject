@@ -81,26 +81,26 @@ def start_test(fsizes:list, ksizes:list, req_rates:list, threads:list, nb_iterat
 if __name__ == "__main__":
     
     
-    #2K response_time
+    #2K easy
     #start_test([128,256],[32,64],[350,700],[2,4], 3)
 
-    #2K throughput
-    start_test([512,256],[256,128],[600,300],[2,4], 3)
+    #2K hard
+    #start_test([512,256],[256,128],[600,300],[2,4], 3)
 
     #Vary thread only
-    #start_test([512],[256],[...],[1,2,4,8],5)
+    start_test([512],[256],[100],[1,2,4,8],3) # OK tested on intel
 
     #Vary fsize only
-    #start_test([32,64,128,256,512],[32],[...],[1],4)
-
+    start_test([64,128,256,512],[32],[100],[1],3) # OK but queuing at 512, bof bof
+    start_test([64,128,256,512],[32],[50],[1],3) # maybe better at 50 but small for 64
     #Vary ksize only
-    #start_test([256],[8,16,32,64,128],[...],[1],4)
+    start_test([256],[8,16,32,64,128],[100],[1],3) # OK
 
     #Vary requests only
-    #start_test([256],[32],[],[1],5)
+    start_test([256],[32],[200, 400, 600, 800],[1],3) # OK, +/- doubling response time but at 800 big jump due to queuing
 
     #Vary fsize-ksize only
-    #start_test([64,128,256,512],[16,32],[...],[1,2,4,8],5)
+    #start_test([64,128,256,512],[16,32],[50],[1],5)
 
     
                         
