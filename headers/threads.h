@@ -40,10 +40,26 @@ typedef struct {
   char ***files;
 } server_thread_args;
 
+/* Take a file as a matrix and divide it into sub-squares of size key_size*key_size
+ * Then applies matrix multiplication between those sub_squares and the key.
+ * @pre: file of size file_size*file_size
+ * @pre: key of size key_size*key_size
+ * @return: fills encrypted_file the result of the matrix multiplications of each sub-squareconcatenated in a single array
+ * 
+*/
 void encrypt_file(char *encrypted_file, char **file, uint32_t file_size, char *key, uint32_t key_size);
 
+/* Function called by the server main to listen on a file descriptor, receive a request, encrypt a file, and send back a response 
+ * @pre: structure server_thread_args containing the file descriptor
+ * @pre: all the files to pick one with the index received in the request
+ * @pre: file size
+ * @return: sends back a response with the encrypted file
+*/ 
 void* start_server_thread(void* args);
 
+/* Funtion called by client main to start a thread which will establish a connection with the server, generate a key, send a request and wait for a response 
+ * @pre: key size and server information
+*/
 void* start_client_thread(void* args);
 
 #endif  /* __UTILS_H_ */

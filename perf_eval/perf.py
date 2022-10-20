@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 
-SERVER_IP = "127.0.0.1"
+SERVER_IP = "10.0.1.3"
 SERVER_PORT = "2241"
 DURATION = 5 # seconds
 DAY_TIME = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
@@ -35,7 +35,7 @@ def init():
 
 
 def script_server(thread, fsize):
-    process = subprocess.Popen(['./server', '-j', str(thread), '-s', str(fsize), '-p', SERVER_PORT], stdout=subprocess.PIPE, cwd=PARENT_PATH)
+    process = subprocess.Popen(['ssh', 'server', '/root/LINFO2241-ArchitecturePerformanceProject/./server', '-j', str(thread), '-s', str(fsize), '-p', SERVER_PORT], stdout=subprocess.PIPE, cwd=PARENT_PATH)
     return process
 
 

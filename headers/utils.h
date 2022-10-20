@@ -63,13 +63,30 @@ uint64_t get_us(struct timeval *timestamp);
  * @pre: rand should be initialised, e.g. using: srand(time(NULL)); */
 uint32_t get_gaussian_number(double mean, double std);
 
-
+/* Check if the queue of requests is empty
+ * @pre: request_queue_t, the queue of requests
+ * @return: True if the queue is empty
+ *          else False 
+ */
 bool isEmpty(request_queue_t* queue) ;
 
+/* Push a node with the fd to receive a request from in the queue
+ * @pre: request_queue_t, the queue to push in
+ * @pre: fd, a file descriptor
+ */
 void push(request_queue_t* queue, int sockfd);
 
+/* Pop a node with a fd to receive from from the queue
+ * @pre: request_queue_t, the queue to pop from
+ * @return: the node_t containing the fd
+ */
 node_t* pop(request_queue_t* queue);
 
+/* Return the sum of values in values
+ * @pre: values the array of values 
+ *       the length of the array
+ * @return: the sum as a uint
+*/ 
 uint32_t get_sum(uint32_t *values, uint32_t length);
 
 uint32_t get_mean(uint32_t *values, uint32_t length);
