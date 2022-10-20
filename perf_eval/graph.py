@@ -62,8 +62,8 @@ def features_importance(df, response_variable):
     return c.feature_importances_
 
 if __name__ == "__main__":
-    FILENAME_THROUGHPUT = "data/20_10_2022_09_59_12_throughput.csv"
-    FILENAME_RESPONSE_TIME = "data/20_10_2022_09_59_12_response_time.csv"
+    FILENAME_THROUGHPUT = "data/20_10_2022_10_38_20_throughput.csv"
+    FILENAME_RESPONSE_TIME = "data/20_10_2022_10_38_20_response_time.csv"
     df_throughput = pd.read_csv(FILENAME_THROUGHPUT)
     df_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
     print(df_throughput.dtypes)
