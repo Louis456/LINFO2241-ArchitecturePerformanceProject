@@ -81,8 +81,11 @@ def start_test(fsizes:list, ksizes:list, req_rates:list, threads:list, nb_iterat
 if __name__ == "__main__":
     
     
-    #2K experimental design
-    start_test([128,256],[32,64],[350,700],[2,4], 3)
+    #2K response_time
+    #start_test([128,256],[32,64],[350,700],[2,4], 3)
+
+    #2K throughput
+    start_test([256,512],[128,256],[300,600],[2,4], 3)
 
     #Vary thread only
     #start_test([512],[256],[...],[1,2,4,8],5)
