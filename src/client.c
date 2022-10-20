@@ -176,11 +176,11 @@ int main(int argc, char **argv) {
 
 
     // Response Times
-    printf("response times: ");
-    if (thread_id > 1) {
-        for (uint32_t i = 0; i < thread_id - 1; i++) printf("%d, ", response_times[i]);
-    }
-    printf("%d\n", response_times[thread_id - 1]);
+    //printf("response times: ");
+    //if (thread_id > 1) {
+    //    for (uint32_t i = 0; i < thread_id - 1; i++) printf("%d, ", response_times[i]);
+    //}
+    //printf("%d\n", response_times[thread_id - 1]);
     printf("mean response time %f\n", get_mean_double(response_times, thread_id)/1000);
     printf("response times std: %f\n", get_std_double(response_times, thread_id)/1000);
     printf("requests sent : %d\n",thread_id);
