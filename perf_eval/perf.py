@@ -31,7 +31,7 @@ def init(FILENAME_THROUGHPUT, FILENAME_RESPONSE_TIME):
 
 
 def script_server(thread, fsize):
-    process = subprocess.Popen(['ssh', 'server', '/root/LINFO2241-ArchitecturePerformanceProject/./server', '-j', str(thread), '-s', str(fsize), '-p', SERVER_PORT], stdout=subprocess.PIPE, cwd=PARENT_PATH)
+    process = subprocess.Popen(['ssh', 'server', '"ulimit', '-n', '8192;','/root/LINFO2241-ArchitecturePerformanceProject/./server', '-j', str(thread), '-s', str(fsize), '-p', SERVER_PORT+'"'], stdout=subprocess.PIPE, cwd=PARENT_PATH)
     return process
 
 
