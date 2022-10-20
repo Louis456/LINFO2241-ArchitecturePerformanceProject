@@ -17,7 +17,7 @@
 #include "../headers/utils.h"
 #include "../headers/threads.h"
 
-const bool showDebug = true;
+const bool showDebug = false;
 
 int print_usage(char *prog_name) {
     fprintf(stdout, "Usage:\n\t%s [-j nb_thread] [-s size] [-p port]\n", prog_name);
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     struct addrinfo *serverinfo; 
     int sockfd;
     int optval = 1;
-    int max_connection_in_queue = 1000;
+    int max_connection_in_queue = 4000;
 
     char s[INET6_ADDRSTRLEN];
 
@@ -181,20 +181,21 @@ int main(int argc, char **argv) {
     struct timeval now;
     struct timeval diff_time;
     get_current_clock(&start_time);
-    get_current_clock(&now);
-    timersub(&now, &start_time, &diff_time);
 
     // Create a queue
     request_queue_t queue;
-    struct pollfd fds[1000];
+    struct pollfd fds[max_connection_in_queue];
     int pollin_happened;
     fds[0].fd = sockfd; fds[0].events = POLLIN;
     int new_fd;
 
-    while(!(get_ms(&diff_time) > 7000 && isEmpty(&queue))) {  // main accept() loop
+    bool first_iter = true;
+
+    while(first_iter || !(get_ms(&diff_time) > 7000 && isEmpty(&queue))) {  // main accept() loop
         int n_events = poll(fds, 1, 0);
         if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
-        else if (n_events > 0) {         
+        else if (n_events > 0) {   
+            first_iter = false;      
             do {
                 pollin_happened = fds[0].revents & POLLIN;
                 if (pollin_happened) { //new connection on server socket

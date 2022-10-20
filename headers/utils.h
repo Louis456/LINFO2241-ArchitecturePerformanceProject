@@ -63,6 +63,13 @@ uint64_t get_us(struct timeval *timestamp);
  * @pre: rand should be initialised, e.g. using: srand(time(NULL)); */
 uint32_t get_gaussian_number(double mean, double std);
 
+
+/* Get random number following an exponantial distribution with the parameter rate 
+ * @pre: lambda or the rate 
+ * @return: the generated number
+*/
+double get_exponential_number(double rate);
+
 /* Check if the queue of requests is empty
  * @pre: request_queue_t, the queue of requests
  * @return: True if the queue is empty

@@ -11,7 +11,7 @@ from pathlib import Path
 
 SERVER_IP = "10.0.1.3"
 SERVER_PORT = "2241"
-DURATION = 5 # seconds
+DURATION = 10 # seconds
 DAY_TIME = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
 FILENAME_THROUGHPUT = "data/"+DAY_TIME+"_throughput.csv"
 FILENAME_RESPONSE_TIME = "data/"+DAY_TIME+"_response_time.csv"
@@ -48,8 +48,8 @@ if __name__ == "__main__":
     FSIZES = (128,256)
     KSIZES = (32,64)
     REQUEST_RATES = (100,200)
-    THREADS = (1,4)
-    NB_ITERATION = 5
+    THREADS = (2,4)
+    NB_ITERATION = 1
 
     init()
 

@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <limits.h>
 #include <pthread.h>
+#include <math.h>
 
 #include "../headers/packet_implem.h"
 #include "../headers/utils.h"
@@ -107,6 +108,9 @@ int main(int argc, char **argv) {
     uint32_t *bytes_sent_rcvd = malloc(sizeof(uint32_t)* nb_available_threads);
     if (bytes_sent_rcvd == NULL) fprintf(stderr, "Error malloc bytes_sent_rcvd\n");
 
+    //For box-muller
+    //double mu = (1/((double)mean_rate_request))*1000000;
+    //double sigma = 0.4*mu;
 
     while (get_ms(&diff_time) < duration) {
         struct timeval before_pthread_create;
@@ -126,9 +130,11 @@ int main(int argc, char **argv) {
         thread_id++;
 
         // Sleep following a normal distribution with Box-Muller algorithm
-        double mu = (1/((double)mean_rate_request))*1000000;
-        double sigma = 0.1*mu;
-        uint64_t time_to_sleep = get_gaussian_number(mu, sigma);
+        
+        
+        //uint64_t time_to_sleep = get_gaussian_number(mu, sigma);
+        double  time_to_sleep = get_exponential_number((double) mean_rate_request);
+        
 
         struct timeval after_pthread_create;
         get_current_clock(&after_pthread_create);
@@ -139,6 +145,7 @@ int main(int argc, char **argv) {
         } else {
             time_to_sleep -= get_us(&between_time);
         }
+        
 
         int errsleep = usleep(time_to_sleep); // time in microseconds
         if (errsleep == -1) fprintf(stderr, "Error while usleeping\n errno: %d\n", errno);
@@ -176,6 +183,7 @@ int main(int argc, char **argv) {
     printf("%d\n", response_times[thread_id - 1]);
     printf("mean response time %f\n", get_mean_double(response_times, thread_id)/1000);
     printf("response times std: %f\n", get_std_double(response_times, thread_id)/1000);
+    printf("requests sent : %d\n",thread_id);
 
 
     // Free

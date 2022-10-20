@@ -86,21 +86,30 @@ uint32_t get_gaussian_number(double mean, double std) {
     static double z2 = 0.0;
     double randn;
     if (z2 == 0.0) {
-	double u1, u2, s;
+        double u1, u2, s;
         do {
-            u1 = 2.0 * random() / RAND_MAX - 1;
-            u2 = 2.0 * random() / RAND_MAX - 1;
+            u1 = 2.0 * (((double) random()) / RAND_MAX) - 1;
+            u2 = 2.0 * (((double) random()) / RAND_MAX) - 1;
             s = u1*u1 + u2*u2;
-	} while (s >= 1 || s == 0);
-        double z1 = u1 * sqrt(-2.0 * log(s) / s);
-        z2 = u2 * sqrt(-2.0 * log(s) / s);
+        } while (s >= 1.0 || s == 0.0);
+        double w = sqrt((-2.0 * log(s)) / s);
+        double z1 = u1 * w;
+        z2 = u2 * w;
         randn = (z1 * std) + mean;        
     } else {
         randn = (z2 * std) + mean;
         z2 = 0.0;     
     }
-    return (uint32_t) randn;
-    
+    if (randn < 0) return 0;
+    return (uint32_t) randn; 
+}
+
+double get_exponential_number(double rate) {
+    double U;
+    do {
+        U = 1.0f - (double) random() / (RAND_MAX);
+    } while (U == 0);
+    return -logf(1.0f - U) / (rate/1000000);
 }
 
 
