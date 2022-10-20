@@ -15,6 +15,8 @@
 
 #include "../headers/packet_implem.h"
 #include "../headers/utils.h"
+#include "../headers/threads.h"
+
 
 const bool showDebug = false;
 
@@ -119,7 +121,7 @@ int main(int argc, char **argv) {
         args->response_time = &(response_times[thread_id]);
         args->bytes_sent_rcvd = &(bytes_sent_rcvd[thread_id]);
 
-        int pthread_err = pthread_create(&(threads[thread_id]), NULL, &start_client, (void*) args);
+        int pthread_err = pthread_create(&(threads[thread_id]), NULL, &start_client_thread, (void*) args);
         if (pthread_err != 0) fprintf(stderr, "Error while creating a thread\n");
         thread_id++;
 

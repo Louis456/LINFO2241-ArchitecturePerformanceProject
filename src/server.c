@@ -15,8 +15,9 @@
 
 #include "../headers/packet_implem.h"
 #include "../headers/utils.h"
+#include "../headers/threads.h"
 
-const bool showDebug = false;
+const bool showDebug = true;
 
 int print_usage(char *prog_name) {
     fprintf(stdout, "Usage:\n\t%s [-j nb_thread] [-s size] [-p port]\n", prog_name);

@@ -46,10 +46,10 @@ def script_client(ksize, request_rate):
 
 if __name__ == "__main__":
     #2^k e
-    FSIZES = (256,512)
-    KSIZES = (16,32)
+    FSIZES = (128,256)
+    KSIZES = (32,64)
     REQUEST_RATES = (100,200)
-    THREADS = (2,4)
+    THREADS = (1,4)
     NB_ITERATION = 5
 
     init()

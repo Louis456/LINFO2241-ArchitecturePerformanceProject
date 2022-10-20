@@ -3,8 +3,8 @@ CFLAGS += -c -std=gnu99 -Wall -Wextra -O2 #-Werror
 CFLAGS += -D_COLOR
 LDFLAGS += -lz -lpthread -lm
 
-CLIENT_SOURCES = $(wildcard src/client.c src/packet_implem.c src/utils.c)
-SERVER_SOURCES = $(wildcard src/server.c src/packet_implem.c src/utils.c)
+CLIENT_SOURCES = $(wildcard src/client.c src/packet_implem.c src/utils.c src/threads.c)
+SERVER_SOURCES = $(wildcard src/server.c src/packet_implem.c src/utils.c src/threads.c)
 
 CLIENT_OBJECTS = $(CLIENT_SOURCES:.c=.o)
 SERVER_OBJECTS = $(SERVER_SOURCES:.c=.o)
