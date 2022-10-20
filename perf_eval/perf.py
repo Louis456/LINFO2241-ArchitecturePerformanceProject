@@ -82,7 +82,7 @@ if __name__ == "__main__":
     
     
     #2K experimental design
-    start_test([128,256],[8,16],[350,700],[2,4], 1)
+    start_test([128,256],[32,64],[350,700],[2,4], 3)
 
     #Vary thread only
     #start_test([512],[256],[...],[1,2,4,8],5)
