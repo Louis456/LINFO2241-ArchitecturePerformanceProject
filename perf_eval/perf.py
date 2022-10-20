@@ -11,7 +11,7 @@ from pathlib import Path
 
 SERVER_IP = "10.0.1.3"
 SERVER_PORT = "2241"
-DURATION = 10 # seconds
+DURATION = 5 # seconds
 #PARENT_PATH = Path().parent.absolute()
 PARENT_PATH = Path().resolve().parent
 
