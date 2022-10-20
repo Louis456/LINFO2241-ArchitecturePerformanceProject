@@ -79,10 +79,25 @@ def start_test(fsizes:list, ksizes:list, req_rates:list, threads:list, nb_iterat
 
 
 if __name__ == "__main__":
-    #2^k e
     
+    
+    #2K experimental design
+    start_test([128,256],[8,16],[350,700],[2,4], 1)
 
-    start_test([128,256],[8,16],[350,700],[2,4], 3)
+    #Vary thread only
+    #start_test([512],[256],[...],[1,2,4,8],5)
+
+    #Vary fsize only
+    #start_test([32,64,128,256,512],[32],[...],[1],4)
+
+    #Vary ksize only
+    #start_test([256],[8,16,32,64,128],[...],[1],4)
+
+    #Vary requests only
+    #start_test([256],[32],[],[1],5)
+
+    #Vary fsize-ksize only
+    #start_test([64,128,256,512],[16,32],[...],[1,2,4,8],5)
 
     
                         
