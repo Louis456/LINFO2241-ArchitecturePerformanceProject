@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sn
 from sklearn.tree import DecisionTreeClassifier
 
-def barplot_2K(xs: list, ys: list, stds: list, labels: list, label: str, x_axis_name: str, y_axis_name: str, title: str, filename: str):
+def barplot_2K(xs: list, ys: list, stds: list, labels: list, x_axis_name: str, y_axis_name: str, title: str, filename: str):
     fig, ax = plt.subplots(figsize=(10, 7))
     width = 0.2
     bars = []
@@ -26,38 +26,55 @@ def barplot_2K(xs: list, ys: list, stds: list, labels: list, label: str, x_axis_
     plt.savefig(filename+".pdf")
     plt.close()
 
+def barplot_single_factor(xs: list, ys: list, stds: list, x_axis_name: str, y_axis_name: str, title: str, filename: str):
+    fig  = plt.figure()
+    plt.bar(xs, ys)
+    plt.errorbar(xs, ys, yerr=stds, fmt="|", color="0")
+    plt.legend()
+    plt.xlabel(x_axis_name)
+    plt.ylabel(y_axis_name)
+    plt.title(title)
+    plt.savefig(filename+".pdf")
+    plt.close()
+
 def get_values_for_2K(df, xs, ys, stds, response_variable):
-        for fsize in df["fsize"].unique():
-            for ksize in df['ksize'].unique():
-                for request_rate in df['request_rate'].unique():
+    for fsize in df["fsize"].unique():
+        for ksize in df['ksize'].unique():
+            for request_rate in df['request_rate'].unique():
 
-                    print("thread values : ", df['thread'].unique())
-                    xs.append("fsize="+str(fsize)+", ksize="+str(ksize)+", req_rate="+str(request_rate))
+                print("thread values : ", df['thread'].unique())
+                xs.append("fsize="+str(fsize)+", ksize="+str(ksize)+", req_rate="+str(request_rate))
 
-                    for thread in df['thread'].unique():
-                        tmp_df = df.loc[(df["fsize"] == fsize) & (df["ksize"] == ksize) & (df["request_rate"] == request_rate) & (df["thread"] == thread)]
-                        
-                        mean = tmp_df[response_variable].mean()
-                        std = tmp_df[response_variable].std()
-                        print(mean)
-                        print(std)
+                for thread in df['thread'].unique():
+                    tmp_df = df.loc[(df["fsize"] == fsize) & (df["ksize"] == ksize) & (df["request_rate"] == request_rate) & (df["thread"] == thread)]
+                    
+                    mean = tmp_df[response_variable].mean()
+                    std = tmp_df[response_variable].std()
+                    
 
-                        if (thread == 2):                
-                            ys[0].append(mean)
-                            stds[0].append(std)
-                        elif (thread == 4):
-                            ys[1].append(mean)
-                            stds[1].append(std)
+                    if (thread == 2):                
+                        ys[0].append(mean)
+                        stds[0].append(std)
+                    elif (thread == 4):
+                        ys[1].append(mean)
+                        stds[1].append(std)
+
+def get_values_single_factor(df, ys, stds, varying_factor, fixed_factors, response_variable):
+    for val in df[varying_factor].unique():
+        tmp_df = df.loc[(df[fixed_factors[0][0]] == fixed_factors[0][1]) & (df[fixed_factors[1][0]] == fixed_factors[1][1]) & (df[fixed_factors[2][0]] == fixed_factors[2][1]) & (df[varying_factor] == val)]
+        mean = tmp_df[response_variable].mean()
+        std = tmp_df[response_variable].std()
+        ys.append(mean)
+        stds.append(std)
 
 
     
 
 if __name__ == "__main__":
-    FILENAME_THROUGHPUT = "data/20_10_2022_12_02_24_throughput.csv"
-    FILENAME_RESPONSE_TIME = "data/20_10_2022_12_02_24_response_time.csv"
+    FILENAME_THROUGHPUT = "data/20_10_2022_13_03_15_throughput.csv"
+    FILENAME_RESPONSE_TIME = "data/20_10_2022_13_03_15_response_time.csv"
     df_throughput = pd.read_csv(FILENAME_THROUGHPUT)
     df_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
-    print(df_throughput.dtypes)
     corr_throughput = df_throughput.corr()
     corr_res_time = df_res_time.corr()
     sn.heatmap(corr_throughput, annot=True)
@@ -77,12 +94,11 @@ if __name__ == "__main__":
     ys = [[], []]
     stds = [[], []]
     get_values_for_2K(df_throughput, xs, ys, stds, "throughput")
-    label = "Threads"
     x_axis_name = "Parameters"
     y_axis_name = "Throughput"
     title = "Throughput versus number of threads"
     filename = "data/throughput_vs_threads"
-    barplot_2K(xs, ys, stds, labels, label, x_axis_name, y_axis_name, title, filename)
+    barplot_2K(xs, ys, stds, labels, x_axis_name, y_axis_name, title, filename)
 
 
     ### Mean response time versus number of threads
@@ -91,16 +107,24 @@ if __name__ == "__main__":
     ys = [[], []]
     stds = [[], []]
     get_values_for_2K(df_res_time, xs, ys, stds, "response_time")
-    label = "Threads"
     x_axis_name = "Parameters"
     y_axis_name = "Mean response time"
     title = "Mean response time versus number of threads"
     filename = "data/mean_response_time_vs_threads"
-    barplot_2K(xs, ys, stds, labels, label, x_axis_name, y_axis_name, title, filename)
-
-    
+    barplot_2K(xs, ys, stds, labels, x_axis_name, y_axis_name, title, filename)
 
 
+    """
     ### Another plot
+    xs = [1,2,4,8] # xs, ys and stds, same dimension
+    ys = []
+    stds = []
+    get_values_single_factor(df, ys, stds, "threads", [("fsize",512),("ksize",256),("request_rate",)], response_variable)
+    x_axis_name = "Threads"
+    y_axis_name = ""
+    title = ""
+    filename = "data/"
+    barplot_single_factor(xs, ys, stds, x_axis_name, y_axis_name, title, filename)
+    """
 
     

@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     struct addrinfo *serverinfo; 
     int sockfd;
     int optval = 1;
-    int max_connection_in_queue = 4000;
+    int max_connection_in_queue = 8192;
 
     char s[INET6_ADDRSTRLEN];
 
