@@ -2,9 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sn
-from sklearn.tree import DecisionTreeClassifier
 
-def barplot_2K(xs: list, ys: list, stds: list, labels: list, x_axis_name: str, y_axis_name: str, title: str, filename: str):
+
+def barplot2k(xs, ys, stds, labels, x_axis_name, y_axis_name, title, filename):
+    # type: (list, list, list, list, str, str, str, str) -> None
     fig, ax = plt.subplots(figsize=(10, 7))
     width = 0.2
     bars = []
@@ -27,7 +28,8 @@ def barplot_2K(xs: list, ys: list, stds: list, labels: list, x_axis_name: str, y
     plt.savefig(filename+".pdf")
     plt.close()
 
-def barplot_single_factor(xs: list, ys: list, stds: list, x_axis_name: str, y_axis_name: str, title: str, filename: str):
+def barplot_single_factor(xs, ys, stds, x_axis_name, y_axis_name, title, filename):
+    # type: (list, list, list, str, str, str, str) -> None
     fig  = plt.figure()
     plt.bar(xs, ys)
     plt.errorbar(xs, ys, yerr=stds, fmt="|", color="0")
@@ -52,10 +54,10 @@ def get_values_for_2K(df, xs, ys, stds, response_variable):
                     std = tmp_df[response_variable].std()
                     
 
-                    if (fsize == 128):                
+                    if (fsize == 256):                
                         ys[0].append(mean)
                         stds[0].append(std)
-                    elif (fsize == 256):
+                    elif (fsize == 512):
                         ys[1].append(mean)
                         stds[1].append(std)
 
@@ -71,8 +73,8 @@ def get_values_single_factor(df, ys, stds, varying_factor, fixed_factors, respon
     
 
 if __name__ == "__main__":
-    FILENAME_THROUGHPUT = "data/2k_throughput_easy.csv"
-    FILENAME_RESPONSE_TIME = "data/2k_response_time_easy.csv"
+    FILENAME_THROUGHPUT = "data/2k_throughput_hard.csv"
+    FILENAME_RESPONSE_TIME = "data/2k_response_time_hard.csv"
     df_throughput = pd.read_csv(FILENAME_THROUGHPUT)
     df_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
     corr_throughput = df_throughput.corr()
@@ -91,7 +93,7 @@ if __name__ == "__main__":
 
                 
     ### Throughput versus number of threads
-    labels = ("fsize 128", "fsize 256")
+    labels = ("fsize 256", "fsize 512")
     xs = []
     ys = [[], []]
     stds = [[], []]
@@ -105,11 +107,11 @@ if __name__ == "__main__":
     y_axis_name = "Throughput [requests/s]"
     title = "Throughput versus number of threads"
     filename = "data/throughput_vs_threads"
-    barplot_2K(xs, ys, stds, labels, x_axis_name, y_axis_name, title, filename)
+    barplot2k(xs, ys, stds, labels, x_axis_name, y_axis_name, title, filename)
 
 
     ### Mean response time versus number of threads
-    labels = ("fsize 128", "fsize 256")
+    labels = ("fsize 256", "fsize 512")
     xs = []
     ys = [[], []]
     stds = [[], []]
@@ -123,20 +125,41 @@ if __name__ == "__main__":
     y_axis_name = "Mean response time [ms]"
     title = "Mean response time versus number of threads"
     filename = "data/mean_response_time_vs_threads"
-    barplot_2K(xs, ys, stds, labels, x_axis_name, y_axis_name, title, filename)
+    barplot2k(xs, ys, stds, labels, x_axis_name, y_axis_name, title, filename)
 
 
-    """
-    ### Another plot
+    
+    ### Threads variations
     xs = [1,2,4,8] # xs, ys and stds, same dimension
+    FILENAME_THROUGHPUT = "data/thread_throughput.csv"
+    FILENAME_RESPONSE_TIME = "data/thread_response_time.csv"
+    df_thread_throughput = pd.read_csv(FILENAME_THROUGHPUT)
+    df_thread_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
     ys = []
     stds = []
-    get_values_single_factor(df, ys, stds, "threads", [("fsize",512),("ksize",256),("request_rate",)], response_variable)
+    get_values_single_factor(df_thread_throughput, ys, stds, "threads", [("fsize",512),("ksize",256),("request_rate",100)], "throughput")
     x_axis_name = "Threads"
-    y_axis_name = ""
-    title = ""
-    filename = "data/"
+    y_axis_name = "Throughput [requests/s]"
+    title = "Throughput in terms of threads"
+    filename = "data/thread_throughput"
     barplot_single_factor(xs, ys, stds, x_axis_name, y_axis_name, title, filename)
-    """
+
+    ys = []
+    stds = []
+    get_values_single_factor(df_thread_res_time, ys, stds, "threads", [("fsize",512),("ksize",256),("request_rate",100)], "response_time")
+    y_axis_name = "Mean response time [ms]"
+    title = "Response time in terms of threads"
+    filename = "data/thread_res_time"
+    barplot_single_factor(xs, ys, stds, x_axis_name, y_axis_name, title, filename)
+    
+
+    ### FSize variations 1
+
+    ### FSize variations 2
+
+    ### KSize variations
+
+    ### Requests variations
+    
 
     
