@@ -96,7 +96,8 @@ if __name__ == "__main__":
 
     #Vary fsize only
     start_test([64,128,256,512],[32],[100],[1],3) # First test response time
-    #start_test([64,128,256,512],[32],[1000],[1],3) #third test throughput
+    #start_test([64,128,256,512],[32],[1000],[1],3) #Second test throughput
+
     #Vary ksize only
     start_test([256],[8,16,32,64,128],[100],[1],3) #First test response time
     #start_test([256],[8,16,32,64,128],[500],[1],3) #Second test throughput
