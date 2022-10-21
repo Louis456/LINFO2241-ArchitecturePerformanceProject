@@ -65,7 +65,7 @@ def get_values_for_2K(df, xs, ys, stds, response_variable):
                     tmp_df = df.loc[(df["fsize"] == fsize) & (df["ksize"] == ksize) & (df["request_rate"] == request_rate) & (df["thread"] == thread)]
                     
                     mean = tmp_df[response_variable].mean()
-                    std = tmp_df[response_variable].std()
+                    std = tmp_df["std"].mean()
                     
 
                     if (thread == 2):                
@@ -87,7 +87,7 @@ def get_values_single_factor(df, ys, stds, varying_factor, fixed_factors, respon
     
 
 if __name__ == "__main__":
-    FILENAME_THROUGHPUT = "data/2k_throughput_easy.csv"
+    FILENAME_THROUGHPUT = "data/2k_throughput_hard.csv"
     FILENAME_RESPONSE_TIME = "data/2k_response_time_easy.csv"
     df_throughput = pd.read_csv(FILENAME_THROUGHPUT)
     df_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
@@ -95,6 +95,7 @@ if __name__ == "__main__":
     corr_res_time = df_res_time.corr()
     print(corr_throughput.head())
     print(corr_res_time.head())
+    fig, ax = plt.subplots(figsize=(3, 6))
     sn.heatmap(corr_throughput[["throughput"]], annot=True)
     plt.margins(5)
     plt.savefig("data/throughput_correlation.pdf")
@@ -114,9 +115,11 @@ if __name__ == "__main__":
     stds = [[], []]
     get_values_for_2K(df_throughput, xs, ys, stds, "throughput")
     #reverse array
-    #xs = xs[::-1]
-    #ys[:] = ys[:][::-1]
-    #stds[:] = stds[:][::-1]
+    xs = xs[::-1]
+    ys[0] = ys[0][::-1]
+    stds[0] = stds[0][::-1]
+    ys[1] = ys[1][::-1]
+    stds[1] = stds[1][::-1]
     
     x_axis_name = "Parameters"
     y_axis_name = "Throughput [requests/s]"

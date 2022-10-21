@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
     printf("%d\n", response_times[thread_id - 1]);
     */
     printf("mean response time %f\n", get_mean_double(response_times, thread_id)/1000);
-    printf("response times std: %f\n", get_std_double(response_times, thread_id)/1000);
+    printf("response times std %f\n", get_std_double(response_times, thread_id)/1000);
     printf("requests sent : %d\n",thread_id);
     
 
