@@ -28,11 +28,10 @@ bool isNotPowerOfTwo(uint32_t file_size) {
     return (file_size <= 0) || ((file_size & (file_size - 1)) != 0);
 }
 
-void generateFiles(char ****files_ptr, uint32_t file_size) {
-    srandom(42);
-    if (showDebug) printf("Start generating 1000 files\n");
+void generateFiles(char ****files_ptr, uint32_t file_size) {   
     *files_ptr = malloc(sizeof(char**)*1000);
     char ***files = *files_ptr;
+    if (showDebug) printf("Start generating 1000 files\n");
     if (files == NULL) fprintf(stderr, "Error malloc file\n");
     for (int i = 0; i < 1000; i++) {
         files[i] = malloc(sizeof(char*)*file_size);
@@ -40,10 +39,16 @@ void generateFiles(char ****files_ptr, uint32_t file_size) {
         for (uint32_t j = 0; j < file_size; j++) {
             files[i][j] = malloc(sizeof(char)*file_size);
             if (files[i][j] == NULL) fprintf(stderr, "Error malloc file\n");
-            for (uint32_t k = 0; k < file_size; k++) {
-                char r = 1 + (random() % 255);
-                files[i][j][k] = r;
-            }
+        }
+    }
+    for (uint32_t i = 0; i < file_size; i++) {
+        for (uint32_t j = 0; j < file_size; j++) {
+            files[0][i][j] = (char) (1 + (random() % 255));
+        }
+    }
+    for (uint32_t i = 1; i < 1000; i++) {
+        for (uint32_t j = 0; j < file_size; j++) {
+            memcpy(files[0][j], files[i][j], file_size);
         }
     }
     if (showDebug) printf("Files generated.\n");
@@ -192,7 +197,7 @@ int main(int argc, char **argv) {
     bool first_iter = true;
     bool first_connection = true;
 
-    while(first_iter || !(get_ms(&diff_time) > 7000 && isEmpty(&queue))) {  // main accept() loop
+    while(first_iter || !(get_ms(&diff_time) > 1700 && isEmpty(&queue))) {  // main accept() loop
         int n_events = poll(fds, 1, 0);
         if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
         else if (n_events > 0) {   

@@ -81,7 +81,6 @@ void* start_client_thread(void* args) {
         key[i] = r;           
     }    
     uint32_t file_index = (random() % 1000);
-
     // Build packet
     pkt_request_t* pkt = pkt_request_new();
     if (pkt == NULL) fprintf(stderr, "Error while making a new request packet in start_client\n");
