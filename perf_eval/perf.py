@@ -89,7 +89,7 @@ if __name__ == "__main__":
     start_test([128,256],[32,64],[350,700],[2,4], 3, duration=10)
 
     #2K throughput
-    #start_test([512,256],[256,128],[600,300],[2,4], 1)
+    start_test([512,256],[256,128],[600,300],[2,4], 1)
 
     #Vary thread only
     start_test([512],[256],[100],[1,2,3,4,5,6,7,8],3) # OK tested on intel
@@ -100,13 +100,13 @@ if __name__ == "__main__":
 
     #Vary ksize only
     start_test([256],[8,16,32,64,128],[100],[1],3) #First test response time
-    #start_test([256],[8,16,32,64,128],[500],[1],3) #Second test throughput
+    start_test([256],[8,16,32,64,128],[500],[1],3) #Second test throughput
 
     #Vary requests only
     start_test([256],[32],[300, 600, 900, 1200,1500],[1],3) 
 
     #Vary fsize-ksize only
-    #start_test([64,128,256,512],[16,32],[50],[1],5)
+    start_test([64,128,256,512],[16,32],[50],[1],5)
 
     
                         

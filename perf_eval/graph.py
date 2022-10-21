@@ -35,7 +35,7 @@ def barplot_single_factor(xs: list, ys: list, stds: list, label: str, x_axis_nam
     plt.xlabel(x_axis_name)
     plt.ylabel(y_axis_name)
     plt.title(title)
-    plt.legend()
+    plt.legend(loc="lower right")
     plt.grid(axis='y', linestyle='dashed')
     plt.rc('axes', axisbelow=True)
     plt.savefig(filename+".pdf")
@@ -47,8 +47,11 @@ def plot_single_factor(xs: list, ys: list, stds: list, label: str, x_axis_name: 
     plt.errorbar(xs, ys, yerr=stds, fmt="|", color="0")
     plt.xlabel(x_axis_name)
     plt.ylabel(y_axis_name)
+    plt.ylim(ymin=0)
+    plt.xlim(xmin=0)
     plt.title(title)
-    plt.legend()
+    plt.legend(loc="lower right")
+
     plt.grid(axis='y', linestyle='dashed')
     plt.rc('axes', axisbelow=True)
     plt.savefig(filename+".pdf")
@@ -199,7 +202,7 @@ if __name__ == "__main__":
 
     ys = []
     stds = []
-    label="key_size=32, request_rate=1000, thread=1"
+    label="key_size=32, request_rate=100, thread=1"
     get_values_single_factor_time(df_file_res_time, ys, stds, "fsize", [("ksize",32),("request_rate",100),("thread",1)])
     y_axis_name = "Mean response time [ms]"
     title = "Response time in terms of file sizes"
