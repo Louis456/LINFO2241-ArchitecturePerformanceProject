@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     if (sockfd == -1) fprintf(stderr, "Error while creating the socket\n errno: %d\n", errno);
     while (connect(sockfd, serverinfo->ai_addr, serverinfo->ai_addrlen) == -1) {
     }
-    if (showDebug) printf("server conneciton opened\n");
+    if (showDebug) fprintf(stderr,"server conneciton opened\n");
     close(sockfd);
 
     struct timeval start_time;
