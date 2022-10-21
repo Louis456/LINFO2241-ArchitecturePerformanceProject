@@ -190,6 +190,7 @@ int main(int argc, char **argv) {
     int new_fd;
 
     bool first_iter = true;
+    bool first_connection = true;
 
     while(first_iter || !(get_ms(&diff_time) > 7000 && isEmpty(&queue))) {  // main accept() loop
         int n_events = poll(fds, 1, 0);
@@ -211,26 +212,31 @@ int main(int argc, char **argv) {
                         &(((struct sockaddr_in *)&their_addr))->sin_addr,
                         s, sizeof s);
 
-                    if (new_fd != -1) {
+                    if (new_fd != -1 && first_connection == false) {
                         push(&queue, new_fd);
                         if (showDebug) printf("Packet added, queue size: %d\n", queue.size);
                     }
 
                     // Check if there is an available thread
+                    
                     int thread_id = getAvailableThreadId(thread_status, nb_threads);
                     if (thread_id != -1 && !isEmpty(&queue)) {
                         createThread(thread_status, &queue, thread_id, file_size, files, threads, thread_activated);
                     }
+                    
+                    first_connection = false;
                 }
                 n_events = poll(fds, 1, 0);
             } while (n_events > 0); // accept while there is new connections on listen queue
             
         } else {
              // Check if there is an available thread
+            
             int thread_id = getAvailableThreadId(thread_status, nb_threads);
             if (thread_id != -1 && !isEmpty(&queue)) {
                 createThread(thread_status, &queue, thread_id, file_size, files, threads, thread_activated);
             }
+            
         }
         // get time diff from last request received and now
         get_current_clock(&now);

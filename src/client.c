@@ -18,6 +18,10 @@
 #include "../headers/utils.h"
 #include "../headers/threads.h"
 
+int print_usage(char *prog_name) {
+    fprintf(stdout, "Usage:\n\t%s [-k key_size] [-r request_rate] [-t duration] serverip:port\n", prog_name);
+    return EXIT_FAILURE;
+}
 
 const bool showDebug = false;
 
@@ -60,9 +64,9 @@ int main(int argc, char **argv) {
             duration *= 1000;
             break;
         case 'h': // help
-            return 1;
+            return print_usage(argv[0]);
         default:
-            return 1;
+            return print_usage(argv[0]);
         }
     }
 
@@ -91,6 +95,12 @@ int main(int argc, char **argv) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return 1;
     }
+    int sockfd = socket(serverinfo->ai_family, serverinfo->ai_socktype, serverinfo->ai_protocol);
+    if (sockfd == -1) fprintf(stderr, "Error while creating the socket\n errno: %d\n", errno);
+    while (connect(sockfd, serverinfo->ai_addr, serverinfo->ai_addrlen) == -1) {
+    }
+    if (showDebug) printf("server conneciton opened\n");
+    close(sockfd);
 
     struct timeval start_time;
     struct timeval now;
@@ -130,9 +140,9 @@ int main(int argc, char **argv) {
         thread_id++;
 
         // Sleep following a normal distribution with Box-Muller algorithm
-        
-        
         //uint64_t time_to_sleep = get_gaussian_number(mu, sigma);
+
+        //Sleep following an exponential distribution
         double  time_to_sleep = get_exponential_number((double) mean_rate_request);
         
 
@@ -175,15 +185,18 @@ int main(int argc, char **argv) {
     printf("mean throughput packets %f\n", throughput_packets);
 
 
-    // Response Times
-    //printf("response times: ");
-    //if (thread_id > 1) {
-    //    for (uint32_t i = 0; i < thread_id - 1; i++) printf("%d, ", response_times[i]);
-    //}
-    //printf("%d\n", response_times[thread_id - 1]);
+    //Response Times
+    /*
+    printf("response times: ");
+    if (thread_id > 1) {
+        for (uint32_t i = 0; i < thread_id - 1; i++) printf("%d, ", response_times[i]);
+    }
+    printf("%d\n", response_times[thread_id - 1]);
+    */
     printf("mean response time %f\n", get_mean_double(response_times, thread_id)/1000);
     printf("response times std: %f\n", get_std_double(response_times, thread_id)/1000);
     printf("requests sent : %d\n",thread_id);
+    
 
 
     // Free

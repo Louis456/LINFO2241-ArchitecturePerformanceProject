@@ -17,7 +17,7 @@ def barplot2k(xs: list, ys: list, stds: list, labels: list, x_axis_name: str, y_
 
     ax.set_xlabel(x_axis_name)
     ax.set_ylabel(y_axis_name)
-    ax.legend()
+    ax.legend(loc='upper left')
     
     ax.set_title(title)
     ax.set_xticks(x, labels=xs)
@@ -55,23 +55,23 @@ def plot_single_factor(xs: list, ys: list, stds: list, label: str, x_axis_name: 
     plt.close()
 
 def get_values_for_2K(df, xs, ys, stds, response_variable):
-    for thread in df["thread"].unique():
+    for fsize in df["fsize"].unique():
         for ksize in df['ksize'].unique():
             for request_rate in df['request_rate'].unique():
 
-                xs.append("threads="+str(thread)+", ksize="+str(ksize)+", req_rate="+str(request_rate))
+                xs.append("fsize="+str(fsize)+", ksize="+str(ksize)+", req_rate="+str(request_rate))
 
-                for fsize in df['fsize'].unique():
+                for thread in df['thread'].unique():
                     tmp_df = df.loc[(df["fsize"] == fsize) & (df["ksize"] == ksize) & (df["request_rate"] == request_rate) & (df["thread"] == thread)]
                     
                     mean = tmp_df[response_variable].mean()
                     std = tmp_df[response_variable].std()
                     
 
-                    if (fsize == 256):                
+                    if (thread == 2):                
                         ys[0].append(mean)
                         stds[0].append(std)
-                    elif (fsize == 512):
+                    elif (thread == 4):
                         ys[1].append(mean)
                         stds[1].append(std)
 
@@ -87,8 +87,8 @@ def get_values_single_factor(df, ys, stds, varying_factor, fixed_factors, respon
     
 
 if __name__ == "__main__":
-    FILENAME_THROUGHPUT = "data/2k_throughput_hard.csv"
-    FILENAME_RESPONSE_TIME = "data/2k_response_time_hard.csv"
+    FILENAME_THROUGHPUT = "data/2k_throughput_easy.csv"
+    FILENAME_RESPONSE_TIME = "data/2k_response_time_easy.csv"
     df_throughput = pd.read_csv(FILENAME_THROUGHPUT)
     df_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
     corr_throughput = df_throughput.corr()
@@ -99,7 +99,8 @@ if __name__ == "__main__":
     plt.margins(5)
     plt.savefig("data/throughput_correlation.pdf")
     plt.close()
-    sn.heatmap(corr_res_time[["response_time"]], annot=True)
+    fig, ax = plt.subplots(figsize=(3, 6))
+    sn.heatmap(corr_res_time[["response_time"]], annot=True, linewidths=0.3)
     plt.margins(5)
     plt.savefig("data/response_time_correlation.pdf")
     plt.close()
@@ -107,7 +108,7 @@ if __name__ == "__main__":
 
                 
     ### Throughput versus number of threads
-    labels = ("fsize 256", "fsize 512")
+    labels = ("2 threads", "4 threads")
     xs = []
     ys = [[], []]
     stds = [[], []]
@@ -125,7 +126,7 @@ if __name__ == "__main__":
 
 
     ### Mean response time versus number of threads
-    labels = ("fsize 256", "fsize 512")
+    labels = ("2 threads", "4 threads")
     xs = []
     ys = [[], []]
     stds = [[], []]

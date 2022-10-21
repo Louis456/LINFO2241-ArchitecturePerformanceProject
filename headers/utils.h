@@ -90,18 +90,37 @@ void push(request_queue_t* queue, int sockfd);
 node_t* pop(request_queue_t* queue);
 
 /* Return the sum of values in values
- * @pre: values the array of values 
+ * @pre: values the array of positive values 
  *       the length of the array
  * @return: the sum as a uint
 */ 
 uint32_t get_sum(uint32_t *values, uint32_t length);
 
+
+/* Return the mean of the values in the array
+ * @pre: values the array of positive values
+ *       the length of the array
+ * @return: the mean as a uint
+*/
 uint32_t get_mean(uint32_t *values, uint32_t length);
 
+
+/* Return the variance of the values in the array
+ * @pre: values the array of positive values
+ *       the length of the array
+ * @return: the variance as a uint
+*/
 uint32_t get_variance(uint32_t *values, uint32_t length);
 
+
+/* Return the std of the values in the array
+ * @pre: values the array of positive values
+ *       the length of the array
+ * @return: the std as a uint
+*/
 uint32_t get_std(uint32_t *values, uint32_t length);
 
+// The following function are the same as above but for double values
 double get_sum_double(uint32_t *values, uint32_t length);
 
 double get_mean_double(uint32_t *values, uint32_t length);
