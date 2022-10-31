@@ -17,41 +17,22 @@
 #include "../headers/utils.h"
 #include "../headers/threads.h"
 
-const bool showDebug = false;
+const bool showDebug = true;
+
+uint32_t file_size = 0;
+uint32_t *files;
 
 int print_usage(char *prog_name) {
     fprintf(stdout, "Usage:\n\t%s [-j nb_thread] [-s size] [-p port]\n", prog_name);
     return EXIT_FAILURE;
 }
 
-bool isNotPowerOfTwo(uint32_t file_size) {
-    return (file_size <= 0) || ((file_size & (file_size - 1)) != 0);
+bool isNotPowerOfTwo(uint32_t fsize) {
+    return (fsize <= 0) || ((fsize & (fsize - 1)) != 0);
 }
 
-void generateFiles(char ****files_ptr, uint32_t file_size) {   
-    *files_ptr = malloc(sizeof(char**)*1000);
-    char ***files = *files_ptr;
-    if (showDebug) printf("Start generating 1000 files\n");
-    if (files == NULL) fprintf(stderr, "Error malloc file\n");
-    for (int i = 0; i < 1000; i++) {
-        files[i] = malloc(sizeof(char*)*file_size);
-        if (files[i] == NULL) fprintf(stderr, "Error malloc file\n");
-        for (uint32_t j = 0; j < file_size; j++) {
-            files[i][j] = malloc(sizeof(char)*file_size);
-            if (files[i][j] == NULL) fprintf(stderr, "Error malloc file\n");
-        }
-    }
-    for (uint32_t i = 0; i < file_size; i++) {
-        for (uint32_t j = 0; j < file_size; j++) {
-            files[0][i][j] = (char) (1 + (random() % 255));
-        }
-    }
-    for (uint32_t i = 1; i < 1000; i++) {
-        for (uint32_t j = 0; j < file_size; j++) {
-            memcpy(files[0][j], files[i][j], file_size);
-        }
-    }
-    if (showDebug) printf("Files generated.\n");
+uint32_t* getFile(uint32_t index) {
+    return &(files[file_size * file_size * index]);
 }
 
 int getAvailableThreadId(thread_status_code *thread_status, uint16_t nb_threads){
@@ -64,9 +45,7 @@ int getAvailableThreadId(thread_status_code *thread_status, uint16_t nb_threads)
 void createThread(
     thread_status_code *thread_status, 
     request_queue_t *queue, 
-    uint16_t thread_id, 
-    uint32_t file_size, 
-    char ***files, 
+    uint16_t thread_id,
     pthread_t *threads, 
     bool *thread_activated
 ) {
@@ -92,7 +71,6 @@ int main(int argc, char **argv) {
 
     int opt;
     char *listen_port = NULL;
-    uint32_t file_size = 0;
     uint16_t nb_threads = 0;
     char *error = NULL;
 
@@ -124,8 +102,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    char ***files = NULL;
-    generateFiles(&files, file_size);
+    files = (u_int32_t *) malloc(sizeof(uint32_t) * 1000 * file_size * file_size);
+    if (files == NULL) fprintf(stderr, "Error malloc file\n");
 
     int status;
     struct sockaddr_storage their_addr;
@@ -136,7 +114,7 @@ int main(int argc, char **argv) {
     int optval = 1;
     int max_connection_in_queue = 8192;
 
-    char s[INET6_ADDRSTRLEN];
+    //char s[INET6_ADDRSTRLEN];
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
@@ -197,69 +175,141 @@ int main(int argc, char **argv) {
     bool first_iter = true;
     bool first_connection = true;
 
-    while(first_iter || !(get_ms(&diff_time) > 1700 && isEmpty(&queue))) {  // main accept() loop
-        int n_events = poll(fds, 1, 0);
-        if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
-        else if (n_events > 0) {   
-            first_iter = false;      
-            do {
-                pollin_happened = fds[0].revents & POLLIN;
-                if (pollin_happened) { //new connection on server socket
+    if (nb_threads == 1) {
+        while(first_iter || !(get_ms(&diff_time) > 2000)) {
+            int n_events = poll(fds, 1, 0);
+            if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
+            else {
+                first_iter = false;
+                do {
+                    pollin_happened = fds[0].revents & POLLIN;
+                    if (pollin_happened) { //new connection on server socket
 
-                    get_current_clock(&start_time); // reset timer upon new request
-                    addr_size = sizeof their_addr;
+                        get_current_clock(&start_time); // reset timer upon new request
+                        addr_size = sizeof their_addr;
 
-                    new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
-                    if (new_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
-                    if (showDebug) printf("Connection accepted\n");
+                        new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
+                        if (new_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
+                        if (showDebug) printf("Connection accepted\n");
 
-                    inet_ntop(their_addr.ss_family, 
-                        &(((struct sockaddr_in *)&their_addr))->sin_addr,
-                        s, sizeof s);
 
-                    if (new_fd != -1 && first_connection == false) {
-                        push(&queue, new_fd);
-                        if (showDebug) printf("Packet added, queue size: %d\n", queue.size);
-                    }
+                        if (new_fd != -1 && first_connection == false) {
+                            pkt_request_t* pkt_request = pkt_request_new();
+                            if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet in server thread\n");
+                            if (recv_request_packet(pkt_request, new_fd, file_size) != PKT_OK) {
+                                // Invalid key size
+                                /*
+                                fprintf(stderr, "Key size must divide the file size\n");
+                                pkt_response_t* pkt_response = pkt_response_new();
+                                if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
+                                char error_message[] = "invalid key size";
+                                uint8_t error_message_size = strlen(error_message)+1;
+                                uint8_t error_code = 1;
+                                create_pkt_response(pkt_response, error_code, error_message_size, error_message);
+                                u_int8_t total_size = RESPONSE_HEADER_LENGTH + error_message_size;
+                                char* buf = malloc(sizeof(char) * total_size);
+                                if (buf == NULL) fprintf(stderr, "Error malloc: buf response invalid key\n");
+                                if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed with invalid key size\n errno: %d\n", errno);
+                                free(buf);
+                                pkt_response_del(pkt_response);
+                                */
+                            } else {
+                                uint32_t* key = (uint32_t *) pkt_request->key;
+                                uint32_t *file = getFile(pkt_request_get_findex(pkt_request));
+                                uint32_t* encrypted_file = malloc(sizeof(uint32_t) * file_size * file_size);
+                                if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
+                                encrypt_file(encrypted_file, file, file_size, key, pkt_request->key_size); 
+                                pkt_request_del(pkt_request);
 
-                    // Check if there is an available thread
+                                // Create response packet
+                                pkt_response_t* pkt_response = pkt_response_new();
+                                if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
+                                uint8_t code = 0;
+                                create_pkt_response(pkt_response, code, file_size*file_size, encrypted_file);
+
+                                // Encode buffer and send it
+                                uint32_t total_size = (file_size * file_size * sizeof(uint32_t)) + RESPONSE_HEADER_LENGTH;
+                                char* buf = malloc(sizeof(char) * total_size);
+                                if (buf == NULL) fprintf(stderr, "Error malloc: buf response\n");
+                                pkt_response_encode(pkt_response, buf);
+                                if (send(new_fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
+
+                                // Free and close
+                                pkt_response_del(pkt_response);
+                                close(new_fd);
+                                free(encrypted_file);
+                                free(buf);                                                            
+                            }
+                        }
+                        first_connection = false;
                     
-                    int thread_id = getAvailableThreadId(thread_status, nb_threads);
-                    if (thread_id != -1 && !isEmpty(&queue)) {
-                        createThread(thread_status, &queue, thread_id, file_size, files, threads, thread_activated);
                     }
-                    
-                    first_connection = false;
-                }
-                n_events = poll(fds, 1, 0);
-            } while (n_events > 0); // accept while there is new connections on listen queue
-            
-        } else {
-             // Check if there is an available thread
-            
-            int thread_id = getAvailableThreadId(thread_status, nb_threads);
-            if (thread_id != -1 && !isEmpty(&queue)) {
-                createThread(thread_status, &queue, thread_id, file_size, files, threads, thread_activated);
+                    n_events = poll(fds, 1, 0);
+                } while (n_events > 0); // accept while there is new connections on listen queue
             }
-            
+            // get time diff from last request received and now
+            get_current_clock(&now);
+            timersub(&now, &start_time, &diff_time);
         }
-        // get time diff from last request received and now
-        get_current_clock(&now);
-        timersub(&now, &start_time, &diff_time);
+    } else {
+        while(first_iter || !(get_ms(&diff_time) > 1700 && isEmpty(&queue))) {  // main accept() loop
+            int n_events = poll(fds, 1, 0);
+            if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
+            else if (n_events > 0) {   
+                first_iter = false;      
+                do {
+                    pollin_happened = fds[0].revents & POLLIN;
+                    if (pollin_happened) { //new connection on server socket
+
+                        get_current_clock(&start_time); // reset timer upon new request
+                        addr_size = sizeof their_addr;
+
+                        new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
+                        if (new_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
+                        if (showDebug) printf("Connection accepted\n");
+
+
+                        if (new_fd != -1 && first_connection == false) {
+                            push(&queue, new_fd);
+                            if (showDebug) printf("Packet added, queue size: %d\n", queue.size);
+                        }
+
+                        // Check if there is an available thread
+                        
+                        int thread_id = getAvailableThreadId(thread_status, nb_threads);
+                        if (thread_id != -1 && !isEmpty(&queue)) {
+                            createThread(thread_status, &queue, thread_id, threads, thread_activated);
+                        }
+                        
+                        first_connection = false;
+                    }
+                    n_events = poll(fds, 1, 0);
+                } while (n_events > 0); // accept while there is new connections on listen queue
+                
+            } else {
+                // Check if there is an available thread
+                
+                int thread_id = getAvailableThreadId(thread_status, nb_threads);
+                if (thread_id != -1 && !isEmpty(&queue)) {
+                    createThread(thread_status, &queue, thread_id, threads, thread_activated);
+                }
+                
+            }
+            // get time diff from last request received and now
+            get_current_clock(&now);
+            timersub(&now, &start_time, &diff_time);
+        }
     }
     
+    
     // Close and free the server
-    for (uint16_t j = 0; j < nb_threads; j++){
-        if (thread_activated[j]) pthread_join(threads[j], NULL);
+    if (nb_threads > 1) {
+        for (uint16_t j = 0; j < nb_threads; j++){
+            if (thread_activated[j]) pthread_join(threads[j], NULL);
+        }
     }
     close(sockfd);
     freeaddrinfo(serverinfo);
-    for (int i = 0; i < 1000; i++) {
-        for (uint32_t j = 0; j < file_size; j++) {
-            free(files[i][j]);
-        }
-        free(files[i]);
-    }
     free(files);
     return 1;
 }

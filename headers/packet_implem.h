@@ -100,6 +100,6 @@ pkt_status_code pkt_request_set_findex(pkt_request_t* pkt, const uint32_t findex
 uint32_t pkt_request_get_ksize(const pkt_request_t* pkt);
 pkt_status_code pkt_request_set_ksize(pkt_request_t* pkt, const uint32_t ksize);
 const char* pkt_request_get_key(const pkt_request_t* pkt);
-pkt_status_code pkt_request_set_key(pkt_request_t* pkt, const char *data, const uint64_t length);
+pkt_status_code pkt_request_set_key(pkt_request_t* pkt, const char *data, const uint32_t length);
 
 #endif  /* __PACKET_IMPLEM_H_ */

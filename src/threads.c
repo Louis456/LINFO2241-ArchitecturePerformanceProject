@@ -12,6 +12,7 @@ void* start_server_thread(void* args) {
     if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet in server thread\n");
     if (recv_request_packet(pkt_request, arguments->fd, fsize) != PKT_OK) {
         // Invalid key size
+        /*
         fprintf(stderr, "Key size must divide the file size\n");
         pkt_response_t* pkt_response = pkt_response_new();
         if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
@@ -25,15 +26,16 @@ void* start_server_thread(void* args) {
         if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed with invalid key size\n errno: %d\n", errno);
         free(buf);
         pkt_response_del(pkt_response);
+        */
         return NULL;
     }
     uint32_t file_index = pkt_request->file_index;
     uint32_t key_size = pkt_request->key_size;
-    char* key = pkt_request->key;
+    uint32_t* key = (uint32_t *) pkt_request->key;
 
     // Get file and encrypt it
-    char **file = (arguments->files)[file_index];
-    char* encrypted_file = malloc(sizeof(char) * fsize * fsize);
+    uint32_t *file = &((arguments->files)[file_index * fsize * fsize]);
+    uint32_t* encrypted_file = malloc(sizeof(uint32_t) * fsize * fsize);
     if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
     encrypt_file(encrypted_file, file, fsize, key, key_size); 
     pkt_request_del(pkt_request);
@@ -45,7 +47,7 @@ void* start_server_thread(void* args) {
     create_pkt_response(pkt_response, code, fsize*fsize, encrypted_file);
 
     // Encode buffer and send it
-    uint32_t total_size = fsize*fsize + RESPONSE_HEADER_LENGTH;
+    uint32_t total_size = (fsize * fsize * sizeof(uint32_t)) + RESPONSE_HEADER_LENGTH;
     char* buf = malloc(sizeof(char) * total_size);
     if (buf == NULL) fprintf(stderr, "Error malloc: buf response\n");
     pkt_response_encode(pkt_response, buf);
@@ -74,23 +76,20 @@ void* start_client_thread(void* args) {
     }
     
     // Generate random key and file index
-    char *key = malloc(sizeof(char)*arguments->key_payload_length);   
-    if (key == NULL) fprintf(stderr, "Error malloc: key payload\n");
-    for (uint64_t i = 0; i < arguments->key_payload_length; i++) {
-        char r = (char) (1 + (random() % 255));
-        key[i] = r;           
-    }    
+    uint32_t *key = malloc(sizeof(uint32_t) * arguments->key_payload_length);   
+    if (key == NULL) fprintf(stderr, "Error malloc: key payload\n");  
     uint32_t file_index = (random() % 1000);
     // Build packet
     pkt_request_t* pkt = pkt_request_new();
     if (pkt == NULL) fprintf(stderr, "Error while making a new request packet in start_client\n");
-    create_pkt_request(pkt, file_index, arguments->key_size, (char *) key);
-    char buf_request[arguments->key_payload_length + REQUEST_HEADER_LENGTH];
+    create_pkt_request(pkt, file_index, arguments->key_size, key);
+    uint32_t buf_size = arguments->key_payload_length * sizeof(uint32_t) + REQUEST_HEADER_LENGTH;
+    char buf_request[buf_size];
     pkt_request_encode(pkt, buf_request);
     pkt_request_del(pkt);
     
     // Send packet to server
-    if (send(sockfd, buf_request, arguments->key_payload_length+REQUEST_HEADER_LENGTH, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
+    if (send(sockfd, buf_request, buf_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
 
     // Start timer
     struct timeval start_at;
@@ -101,7 +100,7 @@ void* start_client_thread(void* args) {
     if (response_pkt== NULL) fprintf(stderr, "Error while making a new response packet in start_client\n");
     recv_response_packet(response_pkt, sockfd);
 
-    *(arguments->bytes_sent_rcvd) = arguments->key_payload_length + REQUEST_HEADER_LENGTH + RESPONSE_HEADER_LENGTH + pkt_response_get_fsize(response_pkt);
+    *(arguments->bytes_sent_rcvd) = arguments->key_payload_length*sizeof(uint32_t) + REQUEST_HEADER_LENGTH + RESPONSE_HEADER_LENGTH + (pkt_response_get_fsize(response_pkt) * sizeof(uint32_t));
 
     // Stop timer and store elapsed time in response_time
     struct timeval end_at;
@@ -120,8 +119,9 @@ void* start_client_thread(void* args) {
 
 
 
-void encrypt_file(char *encrypted_file, char **file, uint32_t file_size, char *key, uint32_t key_size) {
+void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size) {
     // Travel by sub squares of key size
+    // TODO : Change encryption 
     uint32_t file_div_key = file_size / key_size;
     for (uint32_t l = 0; l < file_div_key; l++) {
         for (uint32_t m = 0; m < file_div_key; m++) { 
@@ -129,7 +129,7 @@ void encrypt_file(char *encrypted_file, char **file, uint32_t file_size, char *k
                 for (uint32_t j = 0; j < key_size; j++) { 
                     encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] = 0;
                     for(uint32_t k = 0; k < key_size; k++) {
-                        encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k] * file[l * key_size + k][m * key_size + j];
+                        encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k] * file[((l * key_size + k) * file_size) + (m * key_size + j)];
                     }
                 }
             }

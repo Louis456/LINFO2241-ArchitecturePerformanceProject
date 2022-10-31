@@ -36,10 +36,10 @@ typedef struct {
 
 
 /* Fill the pkt_response structure from the given parameters */
-void create_pkt_response(pkt_response_t* pkt, pkt_error_code code, uint32_t fsize, char* file);
+void create_pkt_response(pkt_response_t* pkt, pkt_error_code code, uint32_t fsize, uint32_t* file);
 
 /* Fill the pkt_request structure from the given parameters */
-void create_pkt_request(pkt_request_t* pkt, uint32_t findex, uint32_t ksize, char *key);
+void create_pkt_request(pkt_request_t* pkt, uint32_t findex, uint32_t ksize, uint32_t *key);
 
 /* Read from sockfd to create a response packet */
 pkt_status_code recv_request_packet(pkt_request_t* pkt, int sockfd, uint32_t file_size);

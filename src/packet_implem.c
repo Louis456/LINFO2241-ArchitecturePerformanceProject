@@ -44,7 +44,7 @@ void pkt_request_decode(const char *data, pkt_request_t *pkt, bool header)
         pkt_request_set_findex(pkt, ntohl(((uint32_t *) (data))[0]));
         pkt_request_set_ksize(pkt, ntohl(((uint32_t *) (data))[1]));
     } else {
-        uint64_t key_length = pkt_request_get_ksize(pkt) * pkt_request_get_ksize(pkt);
+        uint64_t key_length = pkt_request_get_ksize(pkt) * pkt_request_get_ksize(pkt) * sizeof(uint32_t);
         pkt_request_set_key(pkt, data, key_length);
     }
     
@@ -56,7 +56,7 @@ void pkt_response_decode(const char *data, pkt_response_t *pkt, bool header)
         pkt_response_set_errcode(pkt, ((uint8_t *) (data))[0]);
         pkt_response_set_fsize(pkt, ntohl(((uint32_t *) (data+1))[0]));
     } else {
-        pkt_response_set_file(pkt, data, pkt_response_get_fsize(pkt));
+        pkt_response_set_file(pkt, data, pkt_response_get_fsize(pkt) * sizeof(uint32_t));
     }
     
 }
@@ -71,7 +71,7 @@ void pkt_request_encode(pkt_request_t* pkt, char *buf)
     for(int i=0; i<4; i++){
         buf[4+i] = (char) ((ksize >> (8*i)) & 0xff);
     }
-    uint64_t key_length = pkt_request_get_ksize(pkt)*pkt_request_get_ksize(pkt);
+    uint64_t key_length = pkt_request_get_ksize(pkt)*pkt_request_get_ksize(pkt)*sizeof(uint32_t);
     memcpy(buf+8, pkt_request_get_key(pkt), key_length);
 }
 
@@ -83,7 +83,7 @@ void pkt_response_encode(pkt_response_t* pkt, char *buf)
     for(int i=0; i<4; i++){
         buf[1+i] = (char) ((fsize >> (8*i)) & 0xff);
     }
-    memcpy(buf+5, pkt_response_get_file(pkt), pkt_response_get_fsize(pkt));
+    memcpy(buf+5, pkt_response_get_file(pkt), pkt_response_get_fsize(pkt) * sizeof(uint32_t));
 }
 
 
@@ -158,7 +158,7 @@ const char* pkt_request_get_key  (const pkt_request_t* pkt)
     return pkt->key;
 }
 
-pkt_status_code pkt_request_set_key(pkt_request_t* pkt, const char *data, const uint64_t length)
+pkt_status_code pkt_request_set_key(pkt_request_t* pkt, const char *data, const uint32_t length)
 {
     free(pkt->key);
     pkt->key = NULL;
