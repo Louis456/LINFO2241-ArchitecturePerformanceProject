@@ -18,6 +18,7 @@
 #include "../headers/threads.h"
 
 const bool showDebug = true;
+const opti_choice opti = BOTH_OPTI;
 
 uint32_t file_size = 0;
 uint32_t *files;
@@ -25,14 +26,6 @@ uint32_t *files;
 int print_usage(char *prog_name) {
     fprintf(stdout, "Usage:\n\t%s [-j nb_thread] [-s size] [-p port]\n", prog_name);
     return EXIT_FAILURE;
-}
-
-bool isNotPowerOfTwo(uint32_t fsize) {
-    return (fsize <= 0) || ((fsize & (fsize - 1)) != 0);
-}
-
-uint32_t* getFile(uint32_t index) {
-    return &(files[file_size * file_size * index]);
 }
 
 int getAvailableThreadId(thread_status_code *thread_status, uint16_t nb_threads){
@@ -68,11 +61,11 @@ int main(int argc, char **argv) {
 
     struct timeval launch_time;
     if (showDebug) get_current_clock(&launch_time);
-
-    int opt;
+    
     char *listen_port = NULL;
-    uint16_t nb_threads = 0;
     char *error = NULL;
+    uint16_t nb_threads = 0;
+    int opt;
 
     while ((opt = getopt(argc, argv, "j:s:p:h")) != -1) {
         switch (opt) {
@@ -97,7 +90,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (isNotPowerOfTwo(file_size)) {
+    if ((file_size <= 0) || ((file_size & (file_size - 1)) != 0)) {
         fprintf(stderr, "File size must be a power of 2\n");
         return 1;
     }
@@ -105,11 +98,12 @@ int main(int argc, char **argv) {
     files = (u_int32_t *) malloc(sizeof(uint32_t) * 1000 * file_size * file_size);
     if (files == NULL) fprintf(stderr, "Error malloc file\n");
 
-    int status;
-    struct sockaddr_storage their_addr;
-    socklen_t addr_size;
+    
+    struct sockaddr_storage their_addr; 
     struct addrinfo hints;
     struct addrinfo *serverinfo; 
+    socklen_t addr_size;
+    int status;
     int sockfd;
     int optval = 1;
     int max_connection_in_queue = 8192;
@@ -156,8 +150,8 @@ int main(int argc, char **argv) {
     // Init thread pool and its status
     pthread_t threads[nb_threads];
     bool thread_activated[nb_threads];
-    thread_status_code thread_status[nb_threads]; 
     for (int j = 0; j < nb_threads; j++) thread_activated[j] = false;
+    thread_status_code thread_status[nb_threads]; 
     for (int j = 0; j < nb_threads; j++) thread_status[j] = STOPPED;
 
     struct timeval start_time;
@@ -168,8 +162,8 @@ int main(int argc, char **argv) {
     // Create a queue
     request_queue_t queue;
     struct pollfd fds[max_connection_in_queue];
-    int pollin_happened;
     fds[0].fd = sockfd; fds[0].events = POLLIN;
+    int pollin_happened;
     int new_fd;
 
     bool first_iter = true;
@@ -179,7 +173,7 @@ int main(int argc, char **argv) {
         while(first_iter || !(get_ms(&diff_time) > 2000)) {
             int n_events = poll(fds, 1, 0);
             if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
-            else {
+            else if (n_events > 0){
                 first_iter = false;
                 do {
                     pollin_happened = fds[0].revents & POLLIN;
@@ -215,10 +209,10 @@ int main(int argc, char **argv) {
                                 */
                             } else {
                                 uint32_t* key = (uint32_t *) pkt_request->key;
-                                uint32_t *file = getFile(pkt_request_get_findex(pkt_request));
+                                uint32_t *file = &(files[file_size * file_size * pkt_request_get_findex(pkt_request)]); // get file at requested index
                                 uint32_t* encrypted_file = malloc(sizeof(uint32_t) * file_size * file_size);
                                 if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
-                                encrypt_file(encrypted_file, file, file_size, key, pkt_request->key_size); 
+                                encrypt_file(encrypted_file, file, file_size, key, pkt_request->key_size, opti); 
                                 pkt_request_del(pkt_request);
 
                                 // Create response packet
@@ -303,6 +297,7 @@ int main(int argc, char **argv) {
     
     
     // Close and free the server
+    
     if (nb_threads > 1) {
         for (uint16_t j = 0; j < nb_threads; j++){
             if (thread_activated[j]) pthread_join(threads[j], NULL);

@@ -31,6 +31,13 @@ typedef struct {
   int size;
 } request_queue_t;
 
+typedef enum {
+	NOT_OPTI = 0,
+	INLINING,
+  LOOP_UNROLLING,
+  BOTH_OPTI
+} opti_choice;
+
 
 
 

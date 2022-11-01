@@ -47,7 +47,7 @@ typedef struct {
  * @return: fills encrypted_file the result of the matrix multiplications of each sub-squareconcatenated in a single array
  * 
 */
-void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size);
+void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size, opti_choice choice);
 
 /* Function called by the server main to listen on a file descriptor, receive a request, encrypt a file, and send back a response 
  * @pre: structure server_thread_args containing the file descriptor

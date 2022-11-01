@@ -24,9 +24,9 @@ int print_usage(char *prog_name) {
 }
 
 const bool showDebug = true;
+const opti_choice opti = BOTH_OPTI;
 
 int main(int argc, char **argv) {
-    int opt;
     srandom(time(NULL));
 
     char *server_ip_port = NULL;
@@ -37,6 +37,7 @@ int main(int argc, char **argv) {
     uint32_t duration = 0; //in ms
     uint32_t key_size = 0;
     uint64_t key_payload_length = 0; // key_size squared
+    int opt;
 
     while ((opt = getopt(argc, argv, "k:r:t:h")) != -1) {
         switch (opt) {
@@ -167,9 +168,29 @@ int main(int argc, char **argv) {
 
     if (showDebug) printf("waiting for thread to join\n");
 
-    for (uint32_t i = 0; i < thread_id; i++){
-        pthread_join(threads[i], NULL);
+    if (opti == LOOP_UNROLLING || opti == BOTH_OPTI) {
+        uint32_t remaining = thread_id % 10;
+        for (uint32_t i = 0; i < thread_id - remaining; i+=10){
+            pthread_join(threads[i], NULL);
+            pthread_join(threads[i+1], NULL);
+            pthread_join(threads[i+2], NULL);
+            pthread_join(threads[i+3], NULL);
+            pthread_join(threads[i+4], NULL);
+            pthread_join(threads[i+5], NULL);
+            pthread_join(threads[i+6], NULL);
+            pthread_join(threads[i+7], NULL);
+            pthread_join(threads[i+8], NULL);
+            pthread_join(threads[i+9], NULL);
+        }
+        for (uint32_t i = thread_id - remaining; i < thread_id; i++){
+            pthread_join(threads[i], NULL);
+        }
+    } else {
+        for (uint32_t i = 0; i < thread_id; i++){
+            pthread_join(threads[i], NULL);
+        }
     }
+    
     
     // get total time of clients execution
     struct timeval total_time;

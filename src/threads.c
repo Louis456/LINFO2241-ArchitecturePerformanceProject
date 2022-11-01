@@ -37,7 +37,7 @@ void* start_server_thread(void* args) {
     uint32_t *file = &((arguments->files)[file_index * fsize * fsize]);
     uint32_t* encrypted_file = malloc(sizeof(uint32_t) * fsize * fsize);
     if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
-    encrypt_file(encrypted_file, file, fsize, key, key_size); 
+    encrypt_file(encrypted_file, file, fsize, key, key_size, NOT_OPTI);
     pkt_request_del(pkt_request);
     
     // Create response packet
@@ -119,18 +119,80 @@ void* start_client_thread(void* args) {
 
 
 
-void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size) {
-    // Travel by sub squares of key size
-    // TODO : Change encryption 
-    uint32_t file_div_key = file_size / key_size;
-    for (uint32_t l = 0; l < file_div_key; l++) {
-        for (uint32_t m = 0; m < file_div_key; m++) { 
-            for (uint32_t i = 0; i < key_size; i++) {
-                for (uint32_t j = 0; j < key_size; j++) { 
-                    encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] = 0;
-                    for(uint32_t k = 0; k < key_size; k++) {
-                        encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k] * file[((l * key_size + k) * file_size) + (m * key_size + j)];
+void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size, opti_choice opti) {
+    if (opti == NOT_OPTI) {
+        // Travel by sub squares of key size
+        uint32_t file_div_key = file_size / key_size;
+        for (uint32_t l = 0; l < file_div_key; l++) {
+            for (uint32_t m = 0; m < file_div_key; m++) { 
+                for (uint32_t i = 0; i < key_size; i++) {
+                    for (uint32_t j = 0; j < key_size; j++) { 
+                        encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] = 0;
+                        for(uint32_t k = 0; k < key_size; k++) {
+                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k] * file[((l * key_size + k) * file_size) + (m * key_size + j)];
+                        }
                     }
+                }
+            }
+        }
+    } else if (opti == INLINING) {
+        for (uint32_t i = 0; i < file_size; i++) {
+            uint32_t key_block = (i % key_size) * key_size;
+            for(uint32_t j = 0; j < file_size; j++) {
+                encrypted_file[i*file_size + j] = key[key_block] * file[(i-(i%key_size))*file_size + j];
+            }
+            for (uint32_t k = 1; k < key_size; k++) {
+                uint32_t r = key[key_block + k];
+                for(uint32_t j = 0; j < file_size; j++) {
+                    encrypted_file[i*file_size + j] += r * file[(i-(i%key_size)+k)*file_size+j];
+                }
+            }
+        }
+    } else if (opti == LOOP_UNROLLING) {
+        uint32_t file_div_key = file_size / key_size;
+        for (uint32_t l = 0; l < file_div_key; l++) {
+            for (uint32_t m = 0; m < file_div_key; m++) { 
+                for (uint32_t i = 0; i < key_size; i++) {
+                    for (uint32_t j = 0; j < key_size; j++) { 
+                        encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] = 0;
+                        for(uint32_t k = 0; k < key_size; k+=8) {                    
+                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k] * file[((l * key_size + k) * file_size) + (m * key_size + j)];
+                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+1] * file[((l * key_size + k+1) * file_size) + (m * key_size + j)];
+                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+2] * file[((l * key_size + k+2) * file_size) + (m * key_size + j)];
+                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+3] * file[((l * key_size + k+3) * file_size) + (m * key_size + j)];
+                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+4] * file[((l * key_size + k+4) * file_size) + (m * key_size + j)];
+                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+5] * file[((l * key_size + k+5) * file_size) + (m * key_size + j)];
+                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+6] * file[((l * key_size + k+6) * file_size) + (m * key_size + j)];
+                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+7] * file[((l * key_size + k+7) * file_size) + (m * key_size + j)];
+                        }
+                    }
+                }
+            }
+        }
+    } else if (opti == BOTH_OPTI) {
+        for (uint32_t i = 0; i < file_size; i++) {
+            uint32_t key_block = (i % key_size) * key_size;
+            for(uint32_t j = 0; j < file_size; j+=8) {
+                encrypted_file[i*file_size + j] = key[key_block] * file[(i-(i%key_size))*file_size + j];
+                encrypted_file[i*file_size + j+1] = key[key_block] * file[(i-(i%key_size))*file_size + j+1];
+                encrypted_file[i*file_size + j+2] = key[key_block] * file[(i-(i%key_size))*file_size + j+2];
+                encrypted_file[i*file_size + j+3] = key[key_block] * file[(i-(i%key_size))*file_size + j+3];
+                encrypted_file[i*file_size + j+4] = key[key_block] * file[(i-(i%key_size))*file_size + j+4];
+                encrypted_file[i*file_size + j+5] = key[key_block] * file[(i-(i%key_size))*file_size + j+5];
+                encrypted_file[i*file_size + j+6] = key[key_block] * file[(i-(i%key_size))*file_size + j+6];
+                encrypted_file[i*file_size + j+7] = key[key_block] * file[(i-(i%key_size))*file_size + j+7];
+            }
+            for (uint32_t k = 1; k < key_size; k++) {
+                uint32_t r = key[key_block + k];
+                for(uint32_t j = 0; j < file_size; j+=8) {
+                    encrypted_file[i*file_size + j] += r * file[(i-(i%key_size)+k)*file_size+j];
+                    encrypted_file[i*file_size + j+1] += r * file[(i-(i%key_size)+k)*file_size+j+1];
+                    encrypted_file[i*file_size + j+2] += r * file[(i-(i%key_size)+k)*file_size+j+2];
+                    encrypted_file[i*file_size + j+3] += r * file[(i-(i%key_size)+k)*file_size+j+3];
+                    encrypted_file[i*file_size + j+4] += r * file[(i-(i%key_size)+k)*file_size+j+4];
+                    encrypted_file[i*file_size + j+5] += r * file[(i-(i%key_size)+k)*file_size+j+5];
+                    encrypted_file[i*file_size + j+6] += r * file[(i-(i%key_size)+k)*file_size+j+6];
+                    encrypted_file[i*file_size + j+7] += r * file[(i-(i%key_size)+k)*file_size+j+7];
                 }
             }
         }
