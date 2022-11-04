@@ -23,7 +23,7 @@ int print_usage(char *prog_name) {
     return EXIT_FAILURE;
 }
 
-const bool showDebug = true;
+const bool showDebug = false;
 const opti_choice opti = BOTH_OPTI;
 
 int main(int argc, char **argv) {

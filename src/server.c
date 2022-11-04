@@ -17,7 +17,7 @@
 #include "../headers/utils.h"
 #include "../headers/threads.h"
 
-const bool showDebug = true;
+const bool showDebug = false;
 const opti_choice opti = BOTH_OPTI;
 
 uint32_t file_size = 0;
