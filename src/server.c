@@ -18,7 +18,7 @@
 #include "../headers/threads.h"
 
 const bool showDebug = false;
-const opti_choice opti = BOTH_OPTI;
+const opti_choice opti = INLINING;
 
 uint32_t file_size = 0;
 uint32_t *files;
@@ -167,7 +167,6 @@ int main(int argc, char **argv) {
     int new_fd;
 
     bool first_iter = true;
-    bool first_connection = true;
 
     if (nb_threads == 1) {
         while(first_iter || !(get_ms(&diff_time) > 2000)) {
@@ -187,7 +186,7 @@ int main(int argc, char **argv) {
                         if (showDebug) printf("Connection accepted\n");
 
 
-                        if (new_fd != -1 && first_connection == false) {
+                        if (new_fd != -1) {
                             pkt_request_t* pkt_request = pkt_request_new();
                             if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet in server thread\n");
                             if (recv_request_packet(pkt_request, new_fd, file_size) != PKT_OK) {
@@ -235,7 +234,6 @@ int main(int argc, char **argv) {
                                 free(buf);                                                            
                             }
                         }
-                        first_connection = false;
                     
                     }
                     n_events = poll(fds, 1, 0);
@@ -263,7 +261,7 @@ int main(int argc, char **argv) {
                         if (showDebug) printf("Connection accepted\n");
 
 
-                        if (new_fd != -1 && first_connection == false) {
+                        if (new_fd != -1) {
                             push(&queue, new_fd);
                             if (showDebug) printf("Packet added, queue size: %d\n", queue.size);
                         }
@@ -273,9 +271,7 @@ int main(int argc, char **argv) {
                         int thread_id = getAvailableThreadId(thread_status, nb_threads);
                         if (thread_id != -1 && !isEmpty(&queue)) {
                             createThread(thread_status, &queue, thread_id, threads, thread_activated);
-                        }
-                        
-                        first_connection = false;
+                        }                                        
                     }
                     n_events = poll(fds, 1, 0);
                 } while (n_events > 0); // accept while there is new connections on listen queue

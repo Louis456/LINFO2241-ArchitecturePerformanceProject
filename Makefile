@@ -11,13 +11,17 @@ SERVER_OBJECTS = $(SERVER_SOURCES:.c=.o)
 
 CLIENT = client
 SERVER = server
+SERVER_OPTIM = server-optim
 
-all: $(CLIENT) $(SERVER)
+all: $(CLIENT) $(SERVER) $(SERVER_OPTIM)
 
 $(CLIENT): $(CLIENT_OBJECTS)
 	$(CC) $(CLIENT_OBJECTS) -o $@ $(LDFLAGS)
 
 $(SERVER): $(SERVER_OBJECTS)
+	$(CC) $(SERVER_OBJECTS) -o $@ $(LDFLAGS)
+
+$(SERVER_OPTIM): $(SERVER_OBJECTS)
 	$(CC) $(SERVER_OBJECTS) -o $@ $(LDFLAGS)
 
 %.o: %.c
@@ -27,7 +31,7 @@ $(SERVER): $(SERVER_OBJECTS)
 
 clean:
 	rm -f $(CLIENT_OBJECTS) $(SERVER_OBJECTS)
-	rm -f $(CLIENT) $(SERVER)
+	rm -f $(CLIENT) $(SERVER) $(SERVER_OPTIM)
 
 #tests: all
 #	./tests/run_tests.sh

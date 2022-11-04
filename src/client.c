@@ -96,12 +96,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
         return 1;
     }
-    int sockfd = socket(serverinfo->ai_family, serverinfo->ai_socktype, serverinfo->ai_protocol);
-    if (sockfd == -1) fprintf(stderr, "Error while creating the socket\n errno: %d\n", errno);
-    while (connect(sockfd, serverinfo->ai_addr, serverinfo->ai_addrlen) == -1) {
-    }
-    if (showDebug) fprintf(stderr,"server conneciton opened\n");
-    close(sockfd);
+    
 
     struct timeval start_time;
     struct timeval now;
