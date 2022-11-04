@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS += -c -std=gnu99 -Wall -Wextra -mno-sse2 -mno-avx -mno-avx2 -mno-avx512f -fno-unroll-loops -fno-tree-vectorize -O2 #-Werror
+CFLAGS += -c -std=gnu99 -Wall -Wextra -mno-sse2 -mno-avx -mno-avx2 -mno-avx512f -fno-unroll-loops -fno-tree-vectorize -O2 -Werror
 CFLAGS += -D_COLOR
 LDFLAGS += -lz -lpthread -lm
 

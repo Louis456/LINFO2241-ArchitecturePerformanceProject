@@ -147,13 +147,15 @@ int main(int argc, char **argv) {
         printf("Time to start listening in seconds: %f\n", ((double) get_ms(&diff_time_listen)) / 1000);
     }
 
-    // Init thread pool and its status
-    pthread_t threads[nb_threads];
-    bool thread_activated[nb_threads];
-    for (int j = 0; j < nb_threads; j++) thread_activated[j] = false;
-    thread_status_code thread_status[nb_threads]; 
-    for (int j = 0; j < nb_threads; j++) thread_status[j] = STOPPED;
-
+    if (nb_threads > 1) {
+        // Init thread pool and its status
+        pthread_t threads[nb_threads];
+        bool thread_activated[nb_threads];
+        for (int j = 0; j < nb_threads; j++) thread_activated[j] = false;
+        thread_status_code thread_status[nb_threads]; 
+        for (int j = 0; j < nb_threads; j++) thread_status[j] = STOPPED;        
+    }
+    
     struct timeval start_time;
     struct timeval now;
     struct timeval diff_time;
@@ -169,7 +171,7 @@ int main(int argc, char **argv) {
     bool first_iter = true;
 
     if (nb_threads == 1) {
-        while(first_iter || !(get_ms(&diff_time) > 2000)) {
+        while(first_iter || get_ms(&diff_time) < 2000) {
             int n_events = poll(fds, 1, 0);
             if (n_events < 0) fprintf(stderr,"Error while using poll(), errno: %d", errno);
             else if (n_events > 0){
