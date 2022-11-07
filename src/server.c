@@ -61,6 +61,11 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+     if (nb_threads != 1) {
+        fprintf(stderr, "Unexpected number of threads\n");
+        return 0;
+    }
+
     if ((file_size <= 0) || ((file_size & (file_size - 1)) != 0)) {
         fprintf(stderr, "File size must be a power of 2\n");
         return 1;
