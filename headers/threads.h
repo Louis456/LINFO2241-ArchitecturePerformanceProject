@@ -24,11 +24,11 @@ typedef enum {
 } thread_status_code;
 
 typedef struct {
-  struct addrinfo *serverinfo;
+  struct sockaddr_in *servaddr;
   uint64_t key_payload_length;
   uint32_t key_size;
-  uint32_t *response_time;
-  uint32_t *bytes_sent_rcvd;
+  //uint32_t *response_time;
+  //uint32_t *bytes_sent_rcvd;
 } client_thread_args;
 
 typedef struct {

@@ -82,20 +82,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    int status;   
-    struct addrinfo hints;
-    struct addrinfo *serverinfo;
-
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM; // TCP
-    hints.ai_protocol = 0;
-
-    // By using the AI_PASSIVE flag, I’m telling the program to bind to the IP of the host it’s running on.
-    if ((status = getaddrinfo(server_ip, server_port_str, &hints, &serverinfo)) != 0) {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-        return 1;
-    }
+    struct sockaddr_in servaddr;
+    memset(&servaddr, 0, sizeof(servaddr));
+    // Filling server information
+    servaddr.sin_family = AF_INET; 
+    servaddr.sin_port = htons(server_port_str); 
+    servaddr.sin_addr.s_addr = INADDR_ANY;
     
 
     struct timeval start_time;
@@ -128,7 +120,7 @@ int main(int argc, char **argv) {
         // Start a client thread
         client_thread_args *args = (client_thread_args *) malloc(sizeof(client_thread_args));
         if (args == NULL) fprintf(stderr, "Error malloc: client_thread_args\n");
-        args->serverinfo = serverinfo;
+        args->servaddr = &servaddr;
         args->key_size = key_size;
         args->key_payload_length = key_payload_length;
         //args->response_time = &(response_times[thread_id]);

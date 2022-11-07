@@ -64,37 +64,30 @@ int main(int argc, char **argv) {
     if (files == NULL) fprintf(stderr, "Error malloc file\n");
     
     struct sockaddr_storage their_addr; 
-    struct addrinfo hints;
-    struct addrinfo *serverinfo; 
     socklen_t addr_size;
-    int status;
-    int sockfd;
     int optval = 1;
     int max_connection_in_queue = 8192;
 
     //char s[INET6_ADDRSTRLEN];
 
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM; // TCP
-    hints.ai_flags = AI_PASSIVE;
-    hints.ai_protocol = 0;
-
-    if ((status = getaddrinfo(NULL, listen_port, &hints, &serverinfo)) != 0) {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-        return 1;
-    }
-
-    sockfd = socket(serverinfo->ai_family,serverinfo->ai_socktype,serverinfo->ai_protocol);
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
         fprintf(stderr, "Error while creating the socket\n errno: %d\n", errno);
         return 1;
     }
+
+    struct sockaddr_in servaddr;
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET; // IPv4 
+    servaddr.sin_addr.s_addr = INADDR_ANY; 
+    servaddr.sin_port = htons(listen_port);
+
+
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1) {
         fprintf(stderr, "Error while setting socket option\n errno: %d\n", errno);
         return 1;
     }
-    if (bind(sockfd, serverinfo->ai_addr, serverinfo->ai_addrlen) == -1) {
+    if (bind(sockfd, (const struct sockaddr *) &servaddr, sizeof(servaddr)) == -1) {
         fprintf(stderr, "Error while binding the socket\n errno: %d\n", errno);
         return 1;
     }
@@ -119,7 +112,7 @@ int main(int argc, char **argv) {
     struct pollfd fds[max_connection_in_queue];
     fds[0].fd = sockfd; fds[0].events = POLLIN;
     int pollin_happened;
-    int new_fd;
+    int client_fd;
 
     bool first_iter = true;
 
@@ -133,17 +126,17 @@ int main(int argc, char **argv) {
                 if (pollin_happened) { //new connection on server socket
 
                     get_current_clock(&start_time); // reset timer upon new request
-                    addr_size = sizeof their_addr;
+                    addr_size = sizeof(their_addr);
 
-                    new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size);
-                    if (new_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
+                    client_fd = accept(sockfd, (struct sockaddr *) &servaddr, (socklen_t *) &addr_size);
+                    if (client_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
                     if (showDebug) printf("Connection accepted\n");
 
 
-                    if (new_fd != -1) {
+                    if (client_fd != -1) {
                         pkt_request_t* pkt_request = pkt_request_new();
                         if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet\n");
-                        if (recv_request_packet(pkt_request, new_fd, file_size) != PKT_OK) {
+                        if (recv_request_packet(pkt_request, client_fd, file_size) != PKT_OK) {
                             // Invalid key size
                             /*
                             fprintf(stderr, "Key size must divide the file size\n");
@@ -179,11 +172,11 @@ int main(int argc, char **argv) {
                             char* buf = malloc(sizeof(char) * total_size);
                             if (buf == NULL) fprintf(stderr, "Error malloc: buf response\n");
                             pkt_response_encode(pkt_response, buf);
-                            if (send(new_fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
+                            if (send(client_fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
 
                             // Free and close
                             pkt_response_del(pkt_response);
-                            close(new_fd);
+                            close(client_fd);
                             free(encrypted_file);
                             free(buf);                                                            
                         }
@@ -199,7 +192,6 @@ int main(int argc, char **argv) {
     }
     
     close(sockfd);
-    freeaddrinfo(serverinfo);
     free(files);
     return 1;
 }

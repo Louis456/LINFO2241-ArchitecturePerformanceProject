@@ -67,10 +67,10 @@ void* start_server_thread(void* args) {
 
 void* start_client_thread(void* args) {
     client_thread_args *arguments = (client_thread_args *) args;
-    int sockfd = socket(arguments->serverinfo->ai_family, arguments->serverinfo->ai_socktype, arguments->serverinfo->ai_protocol);
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) fprintf(stderr, "Error while creating the socket\n errno: %d\n", errno);
     
-    if (connect(sockfd, arguments->serverinfo->ai_addr, arguments->serverinfo->ai_addrlen) == -1) {
+    if (connect(sockfd, (struct sockaddr*) arguments->servaddr, sizeof(*arguments->servaddr)) == -1) {
         close(sockfd);
         fprintf(stderr, "Error while connecting to server\n errno: %d\n", errno);
     }
