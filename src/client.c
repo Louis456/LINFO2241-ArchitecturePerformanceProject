@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <limits.h>
 #include <math.h>
+#include <pthread.h>
 
 #include "../headers/packet_implem.h"
 #include "../headers/utils.h"
@@ -119,8 +120,8 @@ int main(int argc, char **argv) {
 
 
     while (get_ms(&diff_time) < duration) {
-        struct timeval before_pthread_create;
-        get_current_clock(&before_pthread_create);
+        //struct timeval before_pthread_create;
+        //get_current_clock(&before_pthread_create);
 
         // Start a client thread
         client_thread_args *args = (client_thread_args *) malloc(sizeof(client_thread_args));

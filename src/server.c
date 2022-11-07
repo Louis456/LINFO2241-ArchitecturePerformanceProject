@@ -12,6 +12,7 @@
 #include <sys/poll.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "../headers/packet_implem.h"
 #include "../headers/utils.h"
@@ -33,7 +34,7 @@ int main(int argc, char **argv) {
     uint16_t nb_threads = 0;
     int opt;
 
-    while ((opt = getopt(argc, argv, "j:s:p")) != -1) {
+    while ((opt = getopt(argc, argv, "j:s:p:")) != -1) {
         switch (opt) {
         case 'j': nb_threads = (uint16_t) strtol(optarg, &error, 10); break;
         case 's': file_size = (uint32_t) strtol(optarg, &error, 10); break;
