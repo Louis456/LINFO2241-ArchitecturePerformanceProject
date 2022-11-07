@@ -23,11 +23,6 @@ const opti_choice opti = INLINING;
 uint32_t file_size = 0;
 uint32_t *files;
 
-int print_usage(char *prog_name) {
-    fprintf(stdout, "Usage:\n\t%s [-j nb_thread] [-s size] [-p port]\n", prog_name);
-    return EXIT_FAILURE;
-}
-
 int main(int argc, char **argv) {
 
     struct timeval launch_time;
@@ -38,21 +33,14 @@ int main(int argc, char **argv) {
     uint16_t nb_threads = 0;
     int opt;
 
-    while ((opt = getopt(argc, argv, "j:s:p:h")) != -1) {
+    while ((opt = getopt(argc, argv, "j:s:p")) != -1) {
         switch (opt) {
-        case 'j': // # Threads
-            nb_threads = (uint16_t) strtol(optarg, &error, 10);
-            break;
-        case 's': // file size to be squared
-            file_size = (uint32_t) strtol(optarg, &error, 10);
-            break;
-        case 'p': // listen port
-            listen_port = optarg;
-            break;
-        case 'h':          
-            return print_usage(argv[0]);
-        default:
-            return print_usage(argv[0]);
+        case 'j': nb_threads = (uint16_t) strtol(optarg, &error, 10); break;
+        case 's': file_size = (uint32_t) strtol(optarg, &error, 10); break;
+        case 'p': listen_port = optarg; break;
+        default:          
+            fprintf(stdout, "Usage:\n\t%s [-j nb_thread] [-s size] [-p port]\n", argv[0]);
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -73,7 +61,6 @@ int main(int argc, char **argv) {
 
     files = (u_int32_t *) malloc(sizeof(uint32_t) * 1000 * file_size * file_size);
     if (files == NULL) fprintf(stderr, "Error malloc file\n");
-
     
     struct sockaddr_storage their_addr; 
     struct addrinfo hints;

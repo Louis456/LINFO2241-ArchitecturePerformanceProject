@@ -117,6 +117,7 @@ int main(int argc, char **argv) {
     //double mu = (1/((double)mean_rate_request))*1000000;
     //double sigma = 0.4*mu;
 
+
     while (get_ms(&diff_time) < duration) {
         struct timeval before_pthread_create;
         get_current_clock(&before_pthread_create);
@@ -138,6 +139,7 @@ int main(int argc, char **argv) {
         //uint64_t time_to_sleep = get_gaussian_number(mu, sigma);
 
         //Sleep following an exponential distribution
+        /*
         double  time_to_sleep = get_exponential_number((double) mean_rate_request);
         
 
@@ -150,8 +152,9 @@ int main(int argc, char **argv) {
         } else {
             time_to_sleep -= get_us(&between_time);
         }
+        */
         
-
+        double time_to_sleep = 1.0 / ((double) mean_rate_request);
         int errsleep = usleep(time_to_sleep); // time in microseconds
         if (errsleep == -1) fprintf(stderr, "Error while usleeping\n errno: %d\n", errno);
         
