@@ -92,22 +92,26 @@ void* start_client_thread(void* args) {
     if (send(sockfd, buf_request, buf_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
 
     // Start timer
+    /*
     struct timeval start_at;
     get_current_clock(&start_at);
+    */
 
     // Read the response to create a packet, then delete it
     pkt_response_t *response_pkt = pkt_response_new();
     if (response_pkt== NULL) fprintf(stderr, "Error while making a new response packet in start_client\n");
     recv_response_packet(response_pkt, sockfd);
 
-    *(arguments->bytes_sent_rcvd) = arguments->key_payload_length*sizeof(uint32_t) + REQUEST_HEADER_LENGTH + RESPONSE_HEADER_LENGTH + (pkt_response_get_fsize(response_pkt) * sizeof(uint32_t));
+    //*(arguments->bytes_sent_rcvd) = arguments->key_payload_length*sizeof(uint32_t) + REQUEST_HEADER_LENGTH + RESPONSE_HEADER_LENGTH + (pkt_response_get_fsize(response_pkt) * sizeof(uint32_t));
 
     // Stop timer and store elapsed time in response_time
+    /*
     struct timeval end_at;
     get_current_clock(&end_at);
     struct timeval diff_time;
     timersub(&end_at, &start_at, &diff_time);
     *(arguments->response_time) = get_us(&diff_time);
+    */
 
     pkt_response_del(response_pkt);
 

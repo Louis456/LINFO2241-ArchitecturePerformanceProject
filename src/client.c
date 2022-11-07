@@ -109,10 +109,12 @@ int main(int argc, char **argv) {
     uint32_t thread_id = 0;
     pthread_t *threads = malloc(sizeof(pthread_t) * nb_available_threads); //takes 4mo of RAM
     if (threads == NULL) fprintf(stderr, "Error malloc threads\n");
+    /*
     uint32_t *response_times = malloc(sizeof(uint32_t) * nb_available_threads); 
     if (response_times == NULL) fprintf(stderr, "Error malloc response_times\n");
     uint32_t *bytes_sent_rcvd = malloc(sizeof(uint32_t)* nb_available_threads);
     if (bytes_sent_rcvd == NULL) fprintf(stderr, "Error malloc bytes_sent_rcvd\n");
+    */
 
     //For box-muller
     //double mu = (1/((double)mean_rate_request))*1000000;
@@ -129,8 +131,8 @@ int main(int argc, char **argv) {
         args->serverinfo = serverinfo;
         args->key_size = key_size;
         args->key_payload_length = key_payload_length;
-        args->response_time = &(response_times[thread_id]);
-        args->bytes_sent_rcvd = &(bytes_sent_rcvd[thread_id]);
+        //args->response_time = &(response_times[thread_id]);
+        //args->bytes_sent_rcvd = &(bytes_sent_rcvd[thread_id]);
 
         int pthread_err = pthread_create(&(threads[thread_id]), NULL, &start_client_thread, (void*) args);
         if (pthread_err != 0) fprintf(stderr, "Error while creating a thread\n");
@@ -219,6 +221,6 @@ int main(int argc, char **argv) {
     // Free
     freeaddrinfo(serverinfo);
     free(threads);
-    free(response_times);
-    free(bytes_sent_rcvd);
+    //free(response_times);
+    //free(bytes_sent_rcvd);
 }
