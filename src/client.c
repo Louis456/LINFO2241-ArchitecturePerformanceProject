@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 
     char *server_ip_port = NULL;
     char *server_port_str = NULL;
-    char *server_ip = NULL;
+    //char *server_ip = NULL;
     char *error = NULL;
     uint32_t mean_rate_request = 0;
     uint32_t duration = 0; //in ms
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
     const char * separator = ":";
     server_ip_port = argv[optind];
     char * token = strtok(server_ip_port,separator);
-    server_ip = token;
+    //server_ip = token;
     token = strtok(NULL, separator);
     server_port_str = token;
     if (*error != '\0') {
@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     memset(&servaddr, 0, sizeof(servaddr));
     // Filling server information
     servaddr.sin_family = AF_INET; 
-    servaddr.sin_port = htons(server_port_str); 
+    servaddr.sin_port = htons(atoi(server_port_str)); 
     servaddr.sin_addr.s_addr = INADDR_ANY;
     
 
@@ -211,7 +211,6 @@ int main(int argc, char **argv) {
     */
 
     // Free
-    freeaddrinfo(serverinfo);
     free(threads);
     //free(response_times);
     //free(bytes_sent_rcvd);
