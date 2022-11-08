@@ -164,14 +164,16 @@ int main(int argc, char **argv) {
                         pkt_response_del(pkt_response);
                         */
                     } else {
-                        printf("Packet received\n");
+                        //printf("Packet received\n");
                         uint32_t *key = (uint32_t *) pkt_request->key;
-                        printf("After packet received\n");
+                        //printf("After packet received\n");
                         uint32_t *file = files[pkt_request_get_findex(pkt_request)];
-                        printf("After file\n");
+                        //printf("After file\n");
                         
                         encrypt_file(encrypted_file, file, file_size, key, pkt_request->key_size, opti);
-                        printf("Encrypt\n");
+
+                    
+                        printf("Encrypted file sent: \n"); //TODO REMOVE
                         for (uint32_t i = 0; i < file_size; i++) {
                             for (uint32_t j = 0; j < file_size; j++) {
                                 printf("%d, ", encrypted_file[i * file_size + j]);
@@ -212,7 +214,8 @@ int main(int argc, char **argv) {
     }
     
     close(sockfd);
-    for (uint32_t i = 0; i < file_size; i++) {
+    /**/
+    for (uint32_t i = 0; i < 1000; i++) {
         free(files[i]);
     }
     free(files);
