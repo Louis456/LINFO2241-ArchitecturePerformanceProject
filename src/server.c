@@ -137,8 +137,6 @@ int main(int argc, char **argv) {
 
                     get_current_clock(&start_time); // reset timer upon new request
                     addr_size = sizeof(their_addr);
-                    //printf("\n");
-                    //printf("Before accept connection\n");
                     client_fd = accept(sockfd, (struct sockaddr *) &servaddr, (socklen_t *) &addr_size);
                     if (client_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
                     if (showDebug) printf("Connection accepted\n");
@@ -164,11 +162,8 @@ int main(int argc, char **argv) {
                         pkt_response_del(pkt_response);
                         */
                     } else {
-                        //printf("Packet received\n");
                         uint32_t *key = (uint32_t *) pkt_request->key;
-                        //printf("After packet received\n");
                         uint32_t *file = files[pkt_request_get_findex(pkt_request)];
-                        //printf("After file\n");
                         
                         encrypt_file(encrypted_file, file, file_size, key, pkt_request->key_size, opti);
                         uint8_t code = 0;
@@ -177,35 +172,9 @@ int main(int argc, char **argv) {
                         send(client_fd, &sz, 4,0);
                         send(client_fd, encrypted_file, file_size*file_size * sizeof(uint32_t),0);
                     
-                        //printf("Encrypted file sent: \n"); //TODO REMOVE
-                        /*for (uint32_t i = 0; i < file_size; i++) {
-                            for (uint32_t j = 0; j < file_size; j++) {
-                                printf("%d, ", encrypted_file[i * file_size + j]);
-                            }
-                            printf(" \n");
-                        }*/
-                        //printf("File encrypted\n");
                         pkt_request_del(pkt_request);
 
-                        // Create response packet
-                        /*pkt_response_t* pkt_response = pkt_response_new();
-                        if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");                      
-                        create_pkt_response(pkt_response, code, file_size*file_size, encrypted_file);
-                        //printf("Response created\n");
-
-                        // Encode buffer and send it
-                        uint32_t total_size = (file_size * file_size * sizeof(uint32_t)) + RESPONSE_HEADER_LENGTH;
-                        char* buf = malloc(sizeof(char) * total_size);
-                        if (buf == NULL) fprintf(stderr, "Error malloc: buf response\n");
-                        pkt_response_encode(pkt_response, buf);
-                        if (send(client_fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
-                        //printf("Response sent\n");
-
-                        // Free and close
-                        pkt_response_del(pkt_response);*/
-                        close(client_fd);
-                        //free(buf);
-                        //printf("Client socket closed and frees\n");                                                       
+                        close(client_fd);                                                  
                     }
                 }
                 n_events = poll(fds, 1, 0);
@@ -217,7 +186,6 @@ int main(int argc, char **argv) {
     }
     
     close(sockfd);
-    /**/
     for (uint32_t i = 0; i < 1000; i++) {
         free(files[i]);
     }

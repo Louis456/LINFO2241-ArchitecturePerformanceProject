@@ -14,29 +14,23 @@ void create_pkt_response(pkt_response_t* pkt, pkt_error_code code, uint32_t fsiz
 }
 
 pkt_status_code recv_request_packet(pkt_request_t* pkt, int sockfd, uint32_t file_size) {
-    //printf("Receive packet\n");
-
     uint32_t fileid;
     int numbytes;
-    //printf("Receive fileid\n");
     if ((numbytes = recv(sockfd, &fileid, 4, 0)) == -1) {
         fprintf(stderr, "Error while receiving header from client\n errno: %d\n", errno);
     }
 
     uint32_t keysize;
-    //printf("Receive keysize\n");
     if ((numbytes = recv(sockfd, &keysize, 4, 0)) == -1) {
         fprintf(stderr, "Error while receiving header from client\n errno: %d\n", errno);
     }
 
-    //printf("Decode\n");
     char buf_header[REQUEST_HEADER_LENGTH];
     ((uint32_t *) buf_header)[0] = fileid;
     ((uint32_t *) buf_header)[1] = keysize;
     pkt_request_decode(buf_header, pkt, true);
     
     if (file_size % pkt_request_get_ksize(pkt) != 0) {
-        printf("Inside E_KEY_SIZE, %d, %d\n", file_size, keysize);
         return E_KEY_SIZE;
     }
 
@@ -45,18 +39,13 @@ pkt_status_code recv_request_packet(pkt_request_t* pkt, int sockfd, uint32_t fil
     char buf_key[key_payload_length];
     uint32_t tot = key_payload_length;
     uint32_t done = 0;
-    //printf("While receive buffer\n");
     while (done < tot) {
-        //printf("in while\n");
         if ((numbytes = recv(sockfd, buf_key, tot - done, 0)) == -1) {
             fprintf(stderr, "Error while receiving payload from client\n errno: %d\n", errno);
         }
         done += numbytes;
     }
-    //printf("Decode\n");
     pkt_request_decode(buf_key, pkt, false);
-    //printf("Key: %d\n", pkt_request_get_findex(pkt));
-    //printf("Receive DONE\n");
     return PKT_OK;
 }
 
@@ -65,7 +54,6 @@ void create_pkt_request(pkt_request_t* pkt, uint32_t findex, uint32_t ksize, uin
     pkt_status_code status_code = pkt_request_set_findex(pkt, findex);
     if (status_code != PKT_OK) fprintf(stderr, "error setting the file index in request packet");
 
-    //printf("key_size create_pkt_request: %d\n", ksize);
     status_code = pkt_request_set_ksize(pkt, ksize);
     if (status_code != PKT_OK) fprintf(stderr, "error setting the key size in request packet");
 
