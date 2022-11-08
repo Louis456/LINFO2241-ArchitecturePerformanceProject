@@ -24,7 +24,7 @@ int print_usage(char *prog_name) {
 }
 
 const bool showDebug = false;
-const opti_choice opti = BOTH_OPTI;
+const opti_choice opti = NOT_OPTI;
 
 int main(int argc, char **argv) {
     srandom(time(NULL));
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
         }
         */
         
-        double time_to_sleep = 1.0 / ((double) mean_rate_request);
+        double time_to_sleep = 1000000.0 / ((double) mean_rate_request);
         int errsleep = usleep(time_to_sleep); // time in microseconds
         if (errsleep == -1) fprintf(stderr, "Error while usleeping\n errno: %d\n", errno);
         

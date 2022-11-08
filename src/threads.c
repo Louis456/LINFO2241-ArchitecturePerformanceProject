@@ -159,15 +159,21 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
                 for (uint32_t i = 0; i < key_size; i++) {
                     for (uint32_t j = 0; j < key_size; j++) { 
                         encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] = 0;
-                        for(uint32_t k = 0; k < key_size; k+=8) {                    
-                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k] * file[((l * key_size + k) * file_size) + (m * key_size + j)];
-                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+1] * file[((l * key_size + k+1) * file_size) + (m * key_size + j)];
-                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+2] * file[((l * key_size + k+2) * file_size) + (m * key_size + j)];
-                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+3] * file[((l * key_size + k+3) * file_size) + (m * key_size + j)];
-                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+4] * file[((l * key_size + k+4) * file_size) + (m * key_size + j)];
-                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+5] * file[((l * key_size + k+5) * file_size) + (m * key_size + j)];
-                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+6] * file[((l * key_size + k+6) * file_size) + (m * key_size + j)];
-                            encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+7] * file[((l * key_size + k+7) * file_size) + (m * key_size + j)];
+                        if (key_size >= 8) {
+                            for(uint32_t k = 0; k < key_size; k+=8) {                    
+                                encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k] * file[((l * key_size + k) * file_size) + (m * key_size + j)];
+                                encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+1] * file[((l * key_size + k+1) * file_size) + (m * key_size + j)];
+                                encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+2] * file[((l * key_size + k+2) * file_size) + (m * key_size + j)];
+                                encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+3] * file[((l * key_size + k+3) * file_size) + (m * key_size + j)];
+                                encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+4] * file[((l * key_size + k+4) * file_size) + (m * key_size + j)];
+                                encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+5] * file[((l * key_size + k+5) * file_size) + (m * key_size + j)];
+                                encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+6] * file[((l * key_size + k+6) * file_size) + (m * key_size + j)];
+                                encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k+7] * file[((l * key_size + k+7) * file_size) + (m * key_size + j)];
+                            }
+                        } else {
+                            for(uint32_t k = 0; k < key_size; k++) {
+                                encrypted_file[((l * key_size + i) * file_size) + (m * key_size + j)] += key[(i * key_size) + k] * file[((l * key_size + k) * file_size) + (m * key_size + j)];
+                            }  
                         }
                     }
                 }

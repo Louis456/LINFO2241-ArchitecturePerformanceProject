@@ -19,10 +19,10 @@
 #include "../headers/threads.h"
 
 const bool showDebug = false;
-const opti_choice opti = INLINING;
+const opti_choice opti = NOT_OPTI;
 
 uint32_t file_size = 0;
-uint32_t *files;
+uint32_t **files;
 
 int main(int argc, char **argv) {
 
@@ -60,8 +60,18 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    files = (u_int32_t *) malloc(sizeof(uint32_t) * 1000 * file_size * file_size);
-    if (files == NULL) fprintf(stderr, "Error malloc file\n");
+    files = malloc(sizeof(void*) * 1000); 
+    if (files == NULL) fprintf(stderr, "Error malloc: files\n");
+    for (uint32_t i = 0 ; i < 1000; i++) {
+        files[i] = malloc(file_size*file_size*sizeof(uint32_t));
+        if (files[i] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+    }
+
+    for (uint32_t i = 0; i < file_size * file_size; i++)
+        files[0][i] = i;
+    
+    uint32_t *encrypted_file = malloc(sizeof(uint32_t) * file_size * file_size);
+    if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
     
     struct sockaddr_storage their_addr; 
     socklen_t addr_size;
@@ -127,61 +137,71 @@ int main(int argc, char **argv) {
 
                     get_current_clock(&start_time); // reset timer upon new request
                     addr_size = sizeof(their_addr);
-
+                    //printf("\n");
+                    //printf("Before accept connection\n");
                     client_fd = accept(sockfd, (struct sockaddr *) &servaddr, (socklen_t *) &addr_size);
                     if (client_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
                     if (showDebug) printf("Connection accepted\n");
 
-
-                    if (client_fd != -1) {
-                        pkt_request_t* pkt_request = pkt_request_new();
-                        if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet\n");
-                        if (recv_request_packet(pkt_request, client_fd, file_size) != PKT_OK) {
-                            // Invalid key size
-                            /*
-                            fprintf(stderr, "Key size must divide the file size\n");
-                            pkt_response_t* pkt_response = pkt_response_new();
-                            if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
-                            char error_message[] = "invalid key size";
-                            uint8_t error_message_size = strlen(error_message)+1;
-                            uint8_t error_code = 1;
-                            create_pkt_response(pkt_response, error_code, error_message_size, error_message);
-                            u_int8_t total_size = RESPONSE_HEADER_LENGTH + error_message_size;
-                            char* buf = malloc(sizeof(char) * total_size);
-                            if (buf == NULL) fprintf(stderr, "Error malloc: buf response invalid key\n");
-                            if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed with invalid key size\n errno: %d\n", errno);
-                            free(buf);
-                            pkt_response_del(pkt_response);
-                            */
-                        } else {
-                            uint32_t* key = (uint32_t *) pkt_request->key;
-                            uint32_t *file = &(files[file_size * file_size * pkt_request_get_findex(pkt_request)]); // get file at requested index
-                            uint32_t* encrypted_file = malloc(sizeof(uint32_t) * file_size * file_size);
-                            if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
-                            encrypt_file(encrypted_file, file, file_size, key, pkt_request->key_size, opti); 
-                            pkt_request_del(pkt_request);
-
-                            // Create response packet
-                            pkt_response_t* pkt_response = pkt_response_new();
-                            if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
-                            uint8_t code = 0;
-                            create_pkt_response(pkt_response, code, file_size*file_size, encrypted_file);
-
-                            // Encode buffer and send it
-                            uint32_t total_size = (file_size * file_size * sizeof(uint32_t)) + RESPONSE_HEADER_LENGTH;
-                            char* buf = malloc(sizeof(char) * total_size);
-                            if (buf == NULL) fprintf(stderr, "Error malloc: buf response\n");
-                            pkt_response_encode(pkt_response, buf);
-                            if (send(client_fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
-
-                            // Free and close
-                            pkt_response_del(pkt_response);
-                            close(client_fd);
-                            free(encrypted_file);
-                            free(buf);                                                            
+                    pkt_request_t* pkt_request = pkt_request_new();
+                    if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet\n");
+                    if (recv_request_packet(pkt_request, client_fd, file_size) != PKT_OK) {
+                        printf("not pkt_ok\n");
+                        // Invalid key size
+                        /*
+                        fprintf(stderr, "Key size must divide the file size\n");
+                        pkt_response_t* pkt_response = pkt_response_new();
+                        if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
+                        char error_message[] = "invalid key size";
+                        uint8_t error_message_size = strlen(error_message)+1;
+                        uint8_t error_code = 1;
+                        create_pkt_response(pkt_response, error_code, error_message_size, error_message);
+                        u_int8_t total_size = RESPONSE_HEADER_LENGTH + error_message_size;
+                        char* buf = malloc(sizeof(char) * total_size);
+                        if (buf == NULL) fprintf(stderr, "Error malloc: buf response invalid key\n");
+                        if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed with invalid key size\n errno: %d\n", errno);
+                        free(buf);
+                        pkt_response_del(pkt_response);
+                        */
+                    } else {
+                        printf("Packet received\n");
+                        uint32_t *key = (uint32_t *) pkt_request->key;
+                        printf("After packet received\n");
+                        uint32_t *file = files[pkt_request_get_findex(pkt_request)];
+                        printf("After file\n");
+                        
+                        encrypt_file(encrypted_file, file, file_size, key, pkt_request->key_size, opti);
+                        printf("Encrypt\n");
+                        for (uint32_t i = 0; i < file_size; i++) {
+                            for (uint32_t j = 0; j < file_size; j++) {
+                                printf("%d, ", encrypted_file[i * file_size + j]);
+                            }
+                            printf(" \n");
                         }
+                        //printf("File encrypted\n");
+                        pkt_request_del(pkt_request);
+
+                        // Create response packet
+                        pkt_response_t* pkt_response = pkt_response_new();
+                        if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
+                        uint8_t code = 0;
+                        create_pkt_response(pkt_response, code, file_size*file_size, encrypted_file);
+                        //printf("Response created\n");
+
+                        // Encode buffer and send it
+                        uint32_t total_size = (file_size * file_size * sizeof(uint32_t)) + RESPONSE_HEADER_LENGTH;
+                        char* buf = malloc(sizeof(char) * total_size);
+                        if (buf == NULL) fprintf(stderr, "Error malloc: buf response\n");
+                        pkt_response_encode(pkt_response, buf);
+                        if (send(client_fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
+                        //printf("Response sent\n");
+
+                        // Free and close
+                        pkt_response_del(pkt_response);
+                        close(client_fd);
+                        free(buf);
+                        //printf("Client socket closed and frees\n");                                                       
                     }
-                
                 }
                 n_events = poll(fds, 1, 0);
             } while (n_events > 0); // accept while there is new connections on listen queue
@@ -192,6 +212,10 @@ int main(int argc, char **argv) {
     }
     
     close(sockfd);
+    for (uint32_t i = 0; i < file_size; i++) {
+        free(files[i]);
+    }
     free(files);
+    free(encrypted_file);
     return 1;
 }
