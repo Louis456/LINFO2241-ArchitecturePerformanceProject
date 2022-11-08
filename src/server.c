@@ -19,7 +19,7 @@
 #include "../headers/threads.h"
 
 const bool showDebug = false;
-const opti_choice opti = NOT_OPTI;
+const opti_choice opti = BOTH_OPTI;
 
 uint32_t file_size = 0;
 uint32_t **files;
@@ -171,22 +171,25 @@ int main(int argc, char **argv) {
                         //printf("After file\n");
                         
                         encrypt_file(encrypted_file, file, file_size, key, pkt_request->key_size, opti);
-
+                        uint8_t code = 0;
+                        send(client_fd, &code, 1,0);
+                        unsigned sz = htonl(file_size*file_size * sizeof(uint32_t));
+                        send(client_fd, &sz, 4,0);
+                        send(client_fd, encrypted_file, file_size*file_size * sizeof(uint32_t),0);
                     
-                        printf("Encrypted file sent: \n"); //TODO REMOVE
-                        for (uint32_t i = 0; i < file_size; i++) {
+                        //printf("Encrypted file sent: \n"); //TODO REMOVE
+                        /*for (uint32_t i = 0; i < file_size; i++) {
                             for (uint32_t j = 0; j < file_size; j++) {
                                 printf("%d, ", encrypted_file[i * file_size + j]);
                             }
                             printf(" \n");
-                        }
+                        }*/
                         //printf("File encrypted\n");
                         pkt_request_del(pkt_request);
 
                         // Create response packet
-                        pkt_response_t* pkt_response = pkt_response_new();
-                        if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
-                        uint8_t code = 0;
+                        /*pkt_response_t* pkt_response = pkt_response_new();
+                        if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");                      
                         create_pkt_response(pkt_response, code, file_size*file_size, encrypted_file);
                         //printf("Response created\n");
 
@@ -199,9 +202,9 @@ int main(int argc, char **argv) {
                         //printf("Response sent\n");
 
                         // Free and close
-                        pkt_response_del(pkt_response);
+                        pkt_response_del(pkt_response);*/
                         close(client_fd);
-                        free(buf);
+                        //free(buf);
                         //printf("Client socket closed and frees\n");                                                       
                     }
                 }
