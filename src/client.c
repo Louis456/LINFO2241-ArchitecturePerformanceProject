@@ -14,7 +14,6 @@
 #include <math.h>
 #include <pthread.h>
 
-#include "../headers/packet_implem.h"
 #include "../headers/utils.h"
 #include "../headers/threads.h"
 
@@ -24,7 +23,7 @@ int print_usage(char *prog_name) {
 }
 
 const bool showDebug = false;
-const opti_choice opti = NOT_OPTI;
+const opti_choice opti = BOTH_OPTI;
 
 int main(int argc, char **argv) {
     srandom(time(NULL));

@@ -1,83 +1,5 @@
 #include "../headers/utils.h"
 
-
-void create_pkt_response(pkt_response_t* pkt, pkt_error_code code, uint32_t fsize, uint32_t* file)
-{
-    pkt_status_code status_code = pkt_response_set_errcode(pkt, code);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the error code in response packet");
-
-    status_code = pkt_response_set_fsize(pkt, fsize);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the file size in response packet");
-
-    status_code = pkt_response_set_file(pkt, (char *) file, fsize * sizeof(uint32_t));
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the file payload in response packet");
-}
-
-pkt_status_code recv_request_packet(pkt_request_t* pkt, int sockfd, uint32_t file_size) {
-    uint32_t fileid;
-    int numbytes;
-    if ((numbytes = recv(sockfd, &fileid, 4, 0)) == -1) {
-        fprintf(stderr, "Error while receiving header from client\n errno: %d\n", errno);
-    }
-
-    uint32_t keysize;
-    if ((numbytes = recv(sockfd, &keysize, 4, 0)) == -1) {
-        fprintf(stderr, "Error while receiving header from client\n errno: %d\n", errno);
-    }
-
-    char buf_header[REQUEST_HEADER_LENGTH];
-    ((uint32_t *) buf_header)[0] = fileid;
-    ((uint32_t *) buf_header)[1] = keysize;
-    pkt_request_decode(buf_header, pkt, true);
-    
-    if (file_size % pkt_request_get_ksize(pkt) != 0) {
-        return E_KEY_SIZE;
-    }
-
-    uint32_t key_payload_length = pkt_request_get_ksize(pkt)*pkt_request_get_ksize(pkt)*sizeof(uint32_t);
-
-    char buf_key[key_payload_length];
-    uint32_t tot = key_payload_length;
-    uint32_t done = 0;
-    while (done < tot) {
-        if ((numbytes = recv(sockfd, buf_key, tot - done, 0)) == -1) {
-            fprintf(stderr, "Error while receiving payload from client\n errno: %d\n", errno);
-        }
-        done += numbytes;
-    }
-    pkt_request_decode(buf_key, pkt, false);
-    return PKT_OK;
-}
-
-void create_pkt_request(pkt_request_t* pkt, uint32_t findex, uint32_t ksize, uint32_t *key)
-{
-    pkt_status_code status_code = pkt_request_set_findex(pkt, findex);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the file index in request packet");
-
-    status_code = pkt_request_set_ksize(pkt, ksize);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the key size in request packet");
-
-    uint64_t key_payload_length = ksize * ksize * sizeof(uint32_t);
-    status_code = pkt_request_set_key(pkt, (char *) key, key_payload_length);
-    if (status_code != PKT_OK) fprintf(stderr, "error setting the key in request packet");
-}
-
-pkt_status_code recv_response_packet(pkt_response_t* pkt, int sockfd) {
-    char buf_header[RESPONSE_HEADER_LENGTH];
-    int numbytes;
-    if ((numbytes = recv(sockfd, buf_header, RESPONSE_HEADER_LENGTH, 0)) == -1) {
-        fprintf(stderr, "Error while receiving header from server\n errno: %d\n", errno);
-    }
-    pkt_response_decode(buf_header, pkt, true);
-
-    char buf_file[pkt_response_get_fsize(pkt) * sizeof(uint32_t)];
-    if ((numbytes = recv(sockfd, buf_file, pkt_response_get_fsize(pkt) * sizeof(uint32_t), 0)) == -1) {
-        fprintf(stderr, "Error while receiving file from server\n errno: %d\n", errno);
-    }
-    pkt_response_decode(buf_file, pkt, false);
-    return PKT_OK;
-}
-
 void get_current_clock(struct timeval *timestamp) {
 	struct timespec ts;
 	if (clock_gettime(CLOCK_MONOTONIC, &ts)) {
@@ -94,8 +16,6 @@ uint64_t get_ms(struct timeval *timestamp) {
 uint64_t get_us(struct timeval *timestamp) {
     return timestamp->tv_sec * 1000000 + timestamp->tv_usec;
 }
-
-
 
 uint32_t get_gaussian_number(double mean, double std) {
     static double z2 = 0.0;
@@ -162,9 +82,6 @@ node_t* pop(request_queue_t* queue)
     queue->size -= 1;
     return head;
 }
-
-
-
 
 uint32_t get_sum(uint32_t *values, uint32_t length) {
     if (length == 0 || values == NULL) return 0;   

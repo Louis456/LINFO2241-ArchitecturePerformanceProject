@@ -14,7 +14,6 @@
 #include <time.h>
 #include <pthread.h>
 
-#include "../headers/packet_implem.h"
 #include "../headers/utils.h"
 #include "../headers/threads.h"
 
@@ -123,59 +122,69 @@ int main(int argc, char **argv) {
     fds[0].fd = sockfd; fds[0].events = POLLIN;
     int pollin_happened;
     int client_fd;
+    int n_events;
+
+    // request variables
+    uint32_t key_size = 0;
+    uint32_t old_key_size = 0;
+    uint32_t findex = 0;
+    uint32_t *key = NULL;
+    int numbytes;
+    uint32_t key_payload_length;
+
+    // response variables
+    uint8_t code = 0;
+    uint32_t sz = htonl(file_size*file_size * sizeof(uint32_t));
 
     bool first_iter = true;
 
     while(first_iter || get_ms(&diff_time) < 2000) {
-        int n_events = poll(fds, 1, 0);
+        n_events = poll(fds, 1, 0);
         if (n_events < 0) fprintf(stderr, "Error while using poll(), errno: %d", errno);
         else if (n_events > 0){
             first_iter = false;
             do {
                 pollin_happened = fds[0].revents & POLLIN;
                 if (pollin_happened) { //new connection on server socket
-
                     get_current_clock(&start_time); // reset timer upon new request
                     addr_size = sizeof(their_addr);
+
+                    /* Accepting connection */
                     client_fd = accept(sockfd, (struct sockaddr *) &servaddr, (socklen_t *) &addr_size);
                     if (client_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
                     if (showDebug) printf("Connection accepted\n");
 
-                    pkt_request_t* pkt_request = pkt_request_new();
-                    if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet\n");
-                    if (recv_request_packet(pkt_request, client_fd, file_size) != PKT_OK) {
-                        printf("not pkt_ok\n");
-                        // Invalid key size
-                        /*
-                        fprintf(stderr, "Key size must divide the file size\n");
-                        pkt_response_t* pkt_response = pkt_response_new();
-                        if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
-                        char error_message[] = "invalid key size";
-                        uint8_t error_message_size = strlen(error_message)+1;
-                        uint8_t error_code = 1;
-                        create_pkt_response(pkt_response, error_code, error_message_size, error_message);
-                        u_int8_t total_size = RESPONSE_HEADER_LENGTH + error_message_size;
-                        char* buf = malloc(sizeof(char) * total_size);
-                        if (buf == NULL) fprintf(stderr, "Error malloc: buf response invalid key\n");
-                        if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed with invalid key size\n errno: %d\n", errno);
-                        free(buf);
-                        pkt_response_del(pkt_response);
-                        */
-                    } else {
-                        uint32_t *key = (uint32_t *) pkt_request->key;
-                        uint32_t *file = files[pkt_request_get_findex(pkt_request)];
-                        
-                        encrypt_file(encrypted_file, file, file_size, key, pkt_request->key_size, opti);
-                        uint8_t code = 0;
-                        send(client_fd, &code, 1,0);
-                        unsigned sz = htonl(file_size*file_size * sizeof(uint32_t));
-                        send(client_fd, &sz, 4,0);
-                        send(client_fd, encrypted_file, file_size*file_size * sizeof(uint32_t),0);
-                    
-                        pkt_request_del(pkt_request);
+                    /* Receiving request Headers */
+                    if ((numbytes = recv(client_fd, &findex, 4, 0)) == -1) 
+                        fprintf(stderr, "Error while receiving header from client\n errno: %d\n", errno);
+                    if ((numbytes = recv(client_fd, &key_size, 4, 0)) == -1)
+                        fprintf(stderr, "Error while receiving header from client\n errno: %d\n", errno); 
+                    findex = ntohl(findex); key_size = ntohl(key_size);
 
-                        close(client_fd);                                                  
+                    if (file_size % key_size != 0) fprintf(stderr, "Invalid key format\n");
+
+                    /* Receiving request Key */
+                    if (key == NULL) { // only once for keys of same sizes
+                        key_payload_length = key_size*key_size*sizeof(uint32_t);
+                        key = malloc(key_payload_length);
+                    } else if (old_key_size != key_size){
+                        key_payload_length = key_size*key_size*sizeof(uint32_t);
+                        free(key);
+                        key = malloc(key_payload_length);
                     }
+                    uint32_t done = 0;
+                    while (done < key_payload_length) {
+                        if ((numbytes = recv(client_fd, key, key_payload_length - done, 0)) == -1)
+                            fprintf(stderr, "Error while receiving payload from client\n errno: %d\n", errno);
+                        done += numbytes;
+                    }
+
+                    /* Sending response */
+                    encrypt_file(encrypted_file, files[findex], file_size, key, key_size, opti);
+                    if (send(client_fd, &code, 1, 0) == -1) fprintf(stderr, "send failed, response error_code\n errno: %d\n", errno);
+                    if (send(client_fd, &sz, 4, 0) == -1) fprintf(stderr, "send failed, response size\n errno: %d\n", errno);
+                    if (send(client_fd, encrypted_file, file_size*file_size * sizeof(uint32_t), 0) == -1) fprintf(stderr, "send failed, response encrypted_file\n errno: %d\n", errno);
+                    close(client_fd);
                 }
                 n_events = poll(fds, 1, 0);
             } while (n_events > 0); // accept while there is new connections on listen queue
@@ -191,5 +200,6 @@ int main(int argc, char **argv) {
     }
     free(files);
     free(encrypted_file);
+    if (key != NULL) free(key);
     return 1;
 }

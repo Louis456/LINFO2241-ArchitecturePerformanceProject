@@ -1,70 +1,5 @@
 #include "../headers/threads.h"
 
-
-
-void* start_server_thread(void* args) {
-    // Retrieve arguments
-    server_thread_args *arguments = (server_thread_args *) args;
-    uint32_t fsize = arguments->fsize;
-    
-    // Read client request
-    pkt_request_t* pkt_request = pkt_request_new();
-    if (pkt_request == NULL) fprintf(stderr, "Error while making a new request packet in server thread\n");
-    if (recv_request_packet(pkt_request, arguments->fd, fsize) != PKT_OK) {
-        // Invalid key size
-        /*
-        fprintf(stderr, "Key size must divide the file size\n");
-        pkt_response_t* pkt_response = pkt_response_new();
-        if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
-        char error_message[] = "invalid key size";
-        uint8_t error_message_size = strlen(error_message)+1;
-        uint8_t error_code = 1;
-        create_pkt_response(pkt_response, error_code, error_message_size, error_message);
-        u_int8_t total_size = RESPONSE_HEADER_LENGTH + error_message_size;
-        char* buf = malloc(sizeof(char) * total_size);
-        if (buf == NULL) fprintf(stderr, "Error malloc: buf response invalid key\n");
-        if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed with invalid key size\n errno: %d\n", errno);
-        free(buf);
-        pkt_response_del(pkt_response);
-        */
-        return NULL;
-    }
-    uint32_t file_index = pkt_request->file_index;
-    uint32_t key_size = pkt_request->key_size;
-    uint32_t* key = (uint32_t *) pkt_request->key;
-
-    // Get file and encrypt it
-    uint32_t *file = &((arguments->files)[file_index * fsize * fsize]);
-    uint32_t* encrypted_file = malloc(sizeof(uint32_t) * fsize * fsize);
-    if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
-    encrypt_file(encrypted_file, file, fsize, key, key_size, NOT_OPTI);
-    pkt_request_del(pkt_request);
-    
-    // Create response packet
-    pkt_response_t* pkt_response = pkt_response_new();
-    if (pkt_response== NULL) fprintf(stderr, "Error while making a new response packet in start_server_thread\n");
-    uint8_t code = 0;
-    create_pkt_response(pkt_response, code, fsize*fsize, encrypted_file);
-
-    // Encode buffer and send it
-    uint32_t total_size = (fsize * fsize * sizeof(uint32_t)) + RESPONSE_HEADER_LENGTH;
-    char* buf = malloc(sizeof(char) * total_size);
-    if (buf == NULL) fprintf(stderr, "Error malloc: buf response\n");
-    pkt_response_encode(pkt_response, buf);
-    if (send(arguments->fd, buf, total_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
-
-    // Free and close
-    pkt_response_del(pkt_response);
-    close(arguments->fd);
-    free(encrypted_file);
-    free(buf);
-    *(arguments->status) = STOPPED;
-    free(arguments);
-    pthread_exit(0);
-}
-
-
-
 void* start_client_thread(void* args) {
     client_thread_args *arguments = (client_thread_args *) args;
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -75,21 +10,15 @@ void* start_client_thread(void* args) {
         fprintf(stderr, "Error while connecting to server\n errno: %d\n", errno);
     }
     
-    // Generate random key and file index
     uint32_t *key = malloc(sizeof(uint32_t) * arguments->key_payload_length);   
-    if (key == NULL) fprintf(stderr, "Error malloc: key payload\n");  
-    uint32_t file_index = (random() % 1000);
-    // Build packet
-    pkt_request_t* pkt = pkt_request_new();
-    if (pkt == NULL) fprintf(stderr, "Error while making a new request packet in start_client\n");
-    create_pkt_request(pkt, file_index, arguments->key_size, key);
-    uint32_t buf_size = arguments->key_payload_length * sizeof(uint32_t) + REQUEST_HEADER_LENGTH;
-    char buf_request[buf_size];
-    pkt_request_encode(pkt, buf_request);
-    pkt_request_del(pkt);
-    
-    // Send packet to server
-    if (send(sockfd, buf_request, buf_size, 0) == -1) fprintf(stderr, "send failed\n errno: %d\n", errno);
+    if (key == NULL) fprintf(stderr, "Error malloc: key payload\n");
+
+    // Send request
+    uint32_t file_index = htonl(random() % 1000);
+    uint32_t key_size = htonl(arguments->key_size);
+    if (send(sockfd, &file_index, 4, 0) == -1) fprintf(stderr, "send failed, request fileindex\n errno: %d\n", errno);
+    if (send(sockfd, &key_size, 4, 0) == -1) fprintf(stderr, "send failed, request key_size\n errno: %d\n", errno);
+    if (send(sockfd, key, sizeof(uint32_t) * arguments->key_payload_length, 0) == -1) fprintf(stderr, "send failed, request key\n errno: %d\n", errno);
 
     // Start timer
     /*
@@ -97,10 +26,26 @@ void* start_client_thread(void* args) {
     get_current_clock(&start_at);
     */
 
-    // Read the response to create a packet, then delete it
-    pkt_response_t *response_pkt = pkt_response_new();
-    if (response_pkt== NULL) fprintf(stderr, "Error while making a new response packet in start_client\n");
-    recv_response_packet(response_pkt, sockfd);
+    // Read the response
+    int numbytes;
+    uint8_t error; 
+    if ((numbytes = recv(sockfd, &error, 1, 0)) == -1) 
+        fprintf(stderr, "Error while receiving error code\n errno: %d\n", errno);
+
+    uint32_t file_size; 
+    if ((numbytes = recv(sockfd, &file_size, 4, 0)) == -1) 
+        fprintf(stderr, "Error while receiving file_size\n errno: %d\n", errno);
+    if (file_size > 0) {
+        int64_t left = ntohl(file_size); char buffer[65536];
+        while (left > 0) {
+            uint64_t b = left;
+            if (b > 65536)
+                b = 65536;
+            if ((numbytes = recv(sockfd, &buffer, b, 0)) == -1) 
+                fprintf(stderr, "Error while receiving buffer\n errno: %d\n", errno);
+            left -= numbytes;
+        } 
+    }
 
     //*(arguments->bytes_sent_rcvd) = arguments->key_payload_length*sizeof(uint32_t) + REQUEST_HEADER_LENGTH + RESPONSE_HEADER_LENGTH + (pkt_response_get_fsize(response_pkt) * sizeof(uint32_t));
 
@@ -112,8 +57,6 @@ void* start_client_thread(void* args) {
     timersub(&end_at, &start_at, &diff_time);
     *(arguments->response_time) = get_us(&diff_time);
     */
-
-    pkt_response_del(response_pkt);
 
     close(sockfd);
     free(key);

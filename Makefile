@@ -3,8 +3,8 @@ CFLAGS += -c -Wall -Wextra -mno-sse2 -mno-avx -mno-avx2 -mno-avx512f -fno-unroll
 CFLAGS += -D_COLOR
 LDFLAGS += -lz -lpthread -lm
 
-CLIENT_SOURCES = $(wildcard src/client.c src/packet_implem.c src/utils.c src/threads.c)
-SERVER_SOURCES = $(wildcard src/server.c src/packet_implem.c src/utils.c src/threads.c)
+CLIENT_SOURCES = $(wildcard src/client.c src/utils.c src/threads.c)
+SERVER_SOURCES = $(wildcard src/server.c src/utils.c src/threads.c)
 
 CLIENT_OBJECTS = $(CLIENT_SOURCES:.c=.o)
 SERVER_OBJECTS = $(SERVER_SOURCES:.c=.o)
