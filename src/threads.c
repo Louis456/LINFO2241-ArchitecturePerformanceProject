@@ -21,10 +21,8 @@ void* start_client_thread(void* args) {
     if (send(sockfd, key, sizeof(uint32_t) * arguments->key_payload_length, 0) == -1) fprintf(stderr, "send failed, request key\n errno: %d\n", errno);
 
     // Start timer
-    /*
     struct timeval start_at;
     get_current_clock(&start_at);
-    */
 
     // Read the response
     int numbytes;
@@ -47,16 +45,12 @@ void* start_client_thread(void* args) {
         } 
     }
 
-    //*(arguments->bytes_sent_rcvd) = arguments->key_payload_length*sizeof(uint32_t) + REQUEST_HEADER_LENGTH + RESPONSE_HEADER_LENGTH + (pkt_response_get_fsize(response_pkt) * sizeof(uint32_t));
-
-    // Stop timer and store elapsed time in response_time
-    /*
+    // Stop timer print elapsed time
     struct timeval end_at;
     get_current_clock(&end_at);
     struct timeval diff_time;
     timersub(&end_at, &start_at, &diff_time);
-    *(arguments->response_time) = get_us(&diff_time);
-    */
+    printf("response_time=%"PRIu64"\n", get_us(&diff_time));
 
     close(sockfd);
     free(key);
@@ -66,9 +60,10 @@ void* start_client_thread(void* args) {
 
 
 
-void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size, opti_choice opti) {
-    if (opti == NOT_OPTI) {
+void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size) {
+    #if OPTIM == 0 
         // Travel by sub squares of key size
+        printf("inside optim 0\n");
         uint32_t file_div_key = file_size / key_size;
         for (uint32_t l = 0; l < file_div_key; l++) {
             for (uint32_t m = 0; m < file_div_key; m++) { 
@@ -82,7 +77,8 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
                 }
             }
         }
-    } else if (opti == INLINING) {
+    #elif OPTIM == 1
+        printf("inside optim 1\n");
         for (uint32_t i = 0; i < file_size; i++) {
             uint32_t key_block = (i % key_size) * key_size;
             for(uint32_t j = 0; j < file_size; j++) {
@@ -95,7 +91,8 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
                 }
             }
         }
-    } else if (opti == LOOP_UNROLLING) {
+    #elif OPTIM == 2
+        printf("inside optim 2");
         uint32_t file_div_key = file_size / key_size;
         for (uint32_t l = 0; l < file_div_key; l++) {
             for (uint32_t m = 0; m < file_div_key; m++) { 
@@ -122,7 +119,8 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
                 }
             }
         }
-    } else if (opti == BOTH_OPTI) {
+    #else
+        printf("inside optim 3");
         for (uint32_t i = 0; i < file_size; i++) {
             uint32_t key_block = (i % key_size) * key_size;
             for(uint32_t j = 0; j < file_size; j+=8) {
@@ -149,5 +147,5 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
                 }
             }
         }
-    }
+    #endif
 }

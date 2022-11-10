@@ -18,7 +18,6 @@
 #include "../headers/threads.h"
 
 const bool showDebug = false;
-const opti_choice opti = BOTH_OPTI;
 
 uint32_t file_size = 0;
 uint32_t **files;
@@ -164,7 +163,7 @@ int main(int argc, char **argv) {
                     if (file_size % key_size != 0) fprintf(stderr, "Invalid key format\n");
 
                     /* Receiving request Key */
-                    if (key == NULL) { // only once for keys of same sizes
+                    if (key == NULL) { // malloc only once for keys of same sizes
                         key_payload_length = key_size*key_size*sizeof(uint32_t);
                         key = malloc(key_payload_length);
                     } else if (old_key_size != key_size){
@@ -180,7 +179,7 @@ int main(int argc, char **argv) {
                     }
 
                     /* Sending response */
-                    encrypt_file(encrypted_file, files[findex], file_size, key, key_size, opti);
+                    encrypt_file(encrypted_file, files[findex], file_size, key, key_size);
                     if (send(client_fd, &code, 1, 0) == -1) fprintf(stderr, "send failed, response error_code\n errno: %d\n", errno);
                     if (send(client_fd, &sz, 4, 0) == -1) fprintf(stderr, "send failed, response size\n errno: %d\n", errno);
                     if (send(client_fd, encrypted_file, file_size*file_size * sizeof(uint32_t), 0) == -1) fprintf(stderr, "send failed, response encrypted_file\n errno: %d\n", errno);

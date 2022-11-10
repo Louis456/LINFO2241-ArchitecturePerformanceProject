@@ -23,7 +23,6 @@ int print_usage(char *prog_name) {
 }
 
 const bool showDebug = false;
-const opti_choice opti = BOTH_OPTI;
 
 int main(int argc, char **argv) {
     srandom(time(NULL));
@@ -98,53 +97,18 @@ int main(int argc, char **argv) {
     uint32_t thread_id = 0;
     pthread_t *threads = malloc(sizeof(pthread_t) * nb_available_threads); //takes 4mo of RAM
     if (threads == NULL) fprintf(stderr, "Error malloc threads\n");
-    /*
-    uint32_t *response_times = malloc(sizeof(uint32_t) * nb_available_threads); 
-    if (response_times == NULL) fprintf(stderr, "Error malloc response_times\n");
-    uint32_t *bytes_sent_rcvd = malloc(sizeof(uint32_t)* nb_available_threads);
-    if (bytes_sent_rcvd == NULL) fprintf(stderr, "Error malloc bytes_sent_rcvd\n");
-    */
-
-    //For box-muller
-    //double mu = (1/((double)mean_rate_request))*1000000;
-    //double sigma = 0.4*mu;
-
 
     while (get_ms(&diff_time) < duration) {
-        //struct timeval before_pthread_create;
-        //get_current_clock(&before_pthread_create);
-
         // Start a client thread
         client_thread_args *args = (client_thread_args *) malloc(sizeof(client_thread_args));
         if (args == NULL) fprintf(stderr, "Error malloc: client_thread_args\n");
         args->servaddr = &servaddr;
         args->key_size = key_size;
         args->key_payload_length = key_payload_length;
-        //args->response_time = &(response_times[thread_id]);
-        //args->bytes_sent_rcvd = &(bytes_sent_rcvd[thread_id]);
 
         int pthread_err = pthread_create(&(threads[thread_id]), NULL, &start_client_thread, (void*) args);
         if (pthread_err != 0) fprintf(stderr, "Error while creating a thread\n");
         thread_id++;
-
-        // Sleep following a normal distribution with Box-Muller algorithm
-        //uint64_t time_to_sleep = get_gaussian_number(mu, sigma);
-
-        //Sleep following an exponential distribution
-        /*
-        double  time_to_sleep = get_exponential_number((double) mean_rate_request);
-        
-
-        struct timeval after_pthread_create;
-        get_current_clock(&after_pthread_create);
-        struct timeval between_time;
-        timersub(&after_pthread_create, &before_pthread_create, &between_time);
-        if (time_to_sleep < get_us(&between_time)) {
-            time_to_sleep = 0;
-        } else {
-            time_to_sleep -= get_us(&between_time);
-        }
-        */
         
         double time_to_sleep = 1000000.0 / ((double) mean_rate_request);
         int errsleep = usleep(time_to_sleep); // time in microseconds
@@ -157,58 +121,10 @@ int main(int argc, char **argv) {
 
     if (showDebug) printf("waiting for thread to join\n");
 
-    if (opti == LOOP_UNROLLING || opti == BOTH_OPTI) {
-        uint32_t remaining = thread_id % 10;
-        for (uint32_t i = 0; i < thread_id - remaining; i+=10){
-            pthread_join(threads[i], NULL);
-            pthread_join(threads[i+1], NULL);
-            pthread_join(threads[i+2], NULL);
-            pthread_join(threads[i+3], NULL);
-            pthread_join(threads[i+4], NULL);
-            pthread_join(threads[i+5], NULL);
-            pthread_join(threads[i+6], NULL);
-            pthread_join(threads[i+7], NULL);
-            pthread_join(threads[i+8], NULL);
-            pthread_join(threads[i+9], NULL);
-        }
-        for (uint32_t i = thread_id - remaining; i < thread_id; i++){
-            pthread_join(threads[i], NULL);
-        }
-    } else {
-        for (uint32_t i = 0; i < thread_id; i++){
-            pthread_join(threads[i], NULL);
-        }
+    for (uint32_t i = 0; i < thread_id; i++){
+        pthread_join(threads[i], NULL);
     }
-    
-    
-    // get total time of clients execution
-    /*
-    struct timeval total_time;
-    get_current_clock(&now);
-    timersub(&now, &start_time, &total_time);
-    uint64_t tot_time = get_ms(&total_time);
-    
-    // compute mean throughput
-    double throughput_bytes = (((double) get_sum(bytes_sent_rcvd, thread_id)) / tot_time) * 1000; // Bytes/s
-    double throughput_packets = (((double) thread_id) / tot_time) * 1000; // Packets/s
-
-    printf("mean throughput bytes %f\n", throughput_bytes);
-    printf("mean throughput packets %f\n", throughput_packets);
-
-
-    //Response Times
-    printf("response times: ");
-    if (thread_id > 1) {
-        for (uint32_t i = 0; i < thread_id - 1; i++) printf("%d, ", response_times[i]);
-    }
-    printf("%d\n", response_times[thread_id - 1]);
-    printf("mean response time %f\n", get_mean_double(response_times, thread_id)/1000);
-    printf("response times std %f\n", get_std_double(response_times, thread_id)/1000);
-    printf("requests sent : %d\n",thread_id);
-    */
 
     // Free
     free(threads);
-    //free(response_times);
-    //free(bytes_sent_rcvd);
 }
