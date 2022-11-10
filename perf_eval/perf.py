@@ -12,7 +12,7 @@ from pathlib import Path
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = "2241"
 DURATION = '10' # seconds
-REQUEST_RATE = '10'
+REQUEST_RATE = '4'
 FSIZE = '1024'
 KSIZES = (8, 128)
 THREAD = '1'

@@ -62,8 +62,6 @@ void* start_client_thread(void* args) {
 
 void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size) {
     #if OPTIM == 0 
-        // Travel by sub squares of key size
-        printf("inside optim 0\n");
         uint32_t file_div_key = file_size / key_size;
         for (uint32_t l = 0; l < file_div_key; l++) {
             for (uint32_t m = 0; m < file_div_key; m++) { 
@@ -78,7 +76,6 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
             }
         }
     #elif OPTIM == 1
-        printf("inside optim 1\n");
         for (uint32_t i = 0; i < file_size; i++) {
             uint32_t key_block = (i % key_size) * key_size;
             for(uint32_t j = 0; j < file_size; j++) {
@@ -92,7 +89,6 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
             }
         }
     #elif OPTIM == 2
-        printf("inside optim 2");
         uint32_t file_div_key = file_size / key_size;
         for (uint32_t l = 0; l < file_div_key; l++) {
             for (uint32_t m = 0; m < file_div_key; m++) { 
@@ -120,7 +116,6 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
             }
         }
     #else
-        printf("inside optim 3");
         for (uint32_t i = 0; i < file_size; i++) {
             uint32_t key_block = (i % key_size) * key_size;
             for(uint32_t j = 0; j < file_size; j+=8) {
