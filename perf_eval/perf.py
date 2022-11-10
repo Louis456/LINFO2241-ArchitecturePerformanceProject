@@ -32,13 +32,13 @@ def init_file(filename):
 
 def script_server(opti):
     if opti == 0:
-        process = subprocess.Popen(['./server', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT, '-o', str(opti)], stdout=subprocess.PIPE, cwd=PARENT_PATH)
+        process = subprocess.Popen(['./server', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, cwd=PARENT_PATH)
     elif opti == 1:
-        process = subprocess.Popen(['./server-inline', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT, '-o', str(opti)], stdout=subprocess.PIPE, cwd=PARENT_PATH)
+        process = subprocess.Popen(['./server-inline', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, cwd=PARENT_PATH)
     elif opti == 2:
-        process = subprocess.Popen(['./server-unroll', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT, '-o', str(opti)], stdout=subprocess.PIPE, cwd=PARENT_PATH)
+        process = subprocess.Popen(['./server-unroll', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, cwd=PARENT_PATH)
     else:
-        process = subprocess.Popen(['./server-optim', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT, '-o', str(opti)], stdout=subprocess.PIPE, cwd=PARENT_PATH)
+        process = subprocess.Popen(['./server-optim', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, cwd=PARENT_PATH)
     return process
 
 def script_client(ksize):
