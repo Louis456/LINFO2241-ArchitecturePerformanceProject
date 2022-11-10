@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
                 measurements = {} # {perf_arg: value}
                 for perf_arg in PERF_ARGS:
-                    measurements[perf_arg] = float(re.search("(\d+(?:.?\d)*)\s+"+perf_arg, server_output).group(1).replace(".", ""))
+                    measurements[perf_arg] = float(re.search("(\d+(?:.?\d)*)\s+"+perf_arg, server_output).group(1).replace(".", "").replace(",", ""))
                 
                 # Save response times to file
                 with open(filename_rtime, 'a') as file:
