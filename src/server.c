@@ -17,15 +17,10 @@
 #include "../headers/utils.h"
 #include "../headers/threads.h"
 
-const bool showDebug = false;
-
 uint32_t file_size = 0;
 uint32_t **files;
 
 int main(int argc, char **argv) {
-
-    struct timeval launch_time;
-    if (showDebug) get_current_clock(&launch_time);
     
     char *listen_port = NULL;
     char *error = NULL;
@@ -104,19 +99,6 @@ int main(int argc, char **argv) {
         return 1;
     } else printf("server listening\n");
 
-    if (showDebug) {
-        struct timeval listen_time;
-        get_current_clock(&listen_time);
-        struct timeval diff_time_listen;
-        timersub(&listen_time, &launch_time, &diff_time_listen);
-        printf("Time to start listening in seconds: %f\n", ((double) get_ms(&diff_time_listen)) / 1000);
-    }
-    
-    struct timeval start_time;
-    struct timeval now;
-    struct timeval diff_time;
-    get_current_clock(&start_time);
-
     struct pollfd fds[max_connection_in_queue];
     fds[0].fd = sockfd; fds[0].events = POLLIN;
     int pollin_happened;
@@ -137,21 +119,19 @@ int main(int argc, char **argv) {
 
     bool first_iter = true;
 
-    while(first_iter || get_ms(&diff_time) < 2000) {
-        n_events = poll(fds, 1, 0);
+    while(true) {
+        n_events = poll(fds, 1, 2000);
         if (n_events < 0) fprintf(stderr, "Error while using poll(), errno: %d", errno);
         else if (n_events > 0){
             first_iter = false;
             do {
                 pollin_happened = fds[0].revents & POLLIN;
                 if (pollin_happened) { //new connection on server socket
-                    get_current_clock(&start_time); // reset timer upon new request
                     addr_size = sizeof(their_addr);
 
                     /* Accepting connection */
                     client_fd = accept(sockfd, (struct sockaddr *) &servaddr, (socklen_t *) &addr_size);
                     if (client_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
-                    if (showDebug) printf("Connection accepted\n");
 
                     /* Receiving request Headers */
                     if ((numbytes = recv(client_fd, &findex, 4, 0)) == -1) 
@@ -187,10 +167,9 @@ int main(int argc, char **argv) {
                 }
                 n_events = poll(fds, 1, 0);
             } while (n_events > 0); // accept while there is new connections on listen queue
+        } else {
+            if (!first_iter) break;
         }
-        // get time diff from last request received and now
-        get_current_clock(&now);
-        timersub(&now, &start_time, &diff_time);
     }
     
     close(sockfd);

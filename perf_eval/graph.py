@@ -116,6 +116,7 @@ def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename):
     ax1.set_ylim(bottom=0)
     ax2.set_ylim(bottom=0)
     ax1.set_ylabel("Response time (ms)")
+    ax2.set_ylabel("Response time (ms)")
     fig.subplots_adjust(bottom=0.3)
     fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
 

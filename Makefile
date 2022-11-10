@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS += -c -Wall -Wextra -Werror -mno-sse2 -mno-avx -mno-avx2 -mno-avx512f -fno-unroll-loops -fno-tree-vectorize -O2
 CFLAGS += -D_COLOR
-LDFLAGS += -lz -lpthread -lm
+LDFLAGS += -lpthread -lm
 
 
 CLIENT_SOURCES = $(wildcard src/client.c src/utils.c src/threads.c)
