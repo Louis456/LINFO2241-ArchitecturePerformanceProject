@@ -54,7 +54,7 @@ if __name__ == "__main__":
     make_clean_make_all()
 
     filename_perf = "data/perf_measurements.csv"
-    init_file(filename_perf, "fsize,ksize,request_rate,thread,opti" + ','.join(PERF_ARGS) + "\n")
+    init_file(filename_perf, "fsize,ksize,request_rate,thread,opti," + ','.join(PERF_ARGS) + "\n")
 
     for ksize in KSIZES:
         print("\n=============\nKey size:", ksize)

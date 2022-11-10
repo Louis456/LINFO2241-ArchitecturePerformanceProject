@@ -104,21 +104,67 @@ def get_values_single_factor_time(df, ys, stds, varying_factor, fixed_factors):
         stds.append(std)
 
 
-def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename):
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    fig.suptitle("Response times with respect to key size and optimization")
-    bp = ax1.boxplot(data_8)
-    bp = ax2.boxplot(data_128)
-    fig.set_figheight(9)
-    fig.set_figwidth(16)
-    ax1.set_xticks(np.arange(1, len(labels_8)+1), [label for label in labels_8], rotation=75)
-    ax2.set_xticks(np.arange(1, len(labels_128)+1), [label for label in labels_128], rotation=75)
-    ax1.set_ylim(bottom=0)
-    ax2.set_ylim(bottom=0)
-    ax1.set_ylabel("Response time (ms)")
-    ax2.set_ylabel("Response time (ms)")
-    fig.subplots_adjust(bottom=0.3)
-    fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
+def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename, type="split"):
+    if type == "split":
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        fig.suptitle("Response times with respect to key size and optimization")
+        bp = ax1.boxplot(data_8)
+        bp = ax2.boxplot(data_128)
+        fig.set_figheight(9)
+        fig.set_figwidth(16)
+        ax1.set_xticks(np.arange(1, len(labels_8)+1), [label for label in labels_8], rotation=75)
+        ax2.set_xticks(np.arange(1, len(labels_128)+1), [label for label in labels_128], rotation=75)
+        ax1.set_ylim(bottom=0)
+        ax2.set_ylim(bottom=0)
+        ax1.set_ylabel("Response time (ms)")
+        ax2.set_ylabel("Response time (ms)")
+        fig.subplots_adjust(bottom=0.3)
+        fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
+    else:
+        fig, ax = plt.subplots()
+        plt.title("Response times with respect to key size and optimization")
+        bp = ax.boxplot(data_8 + data_128)
+        fig.set_figheight(9)
+        fig.set_figwidth(8)
+        labels = labels_8 + labels_128
+        ax.set_xticks(np.arange(1, len(labels)+1), [label for label in labels], rotation=75)
+        ax.set_ylim(bottom=0)
+        ax.set_ylabel("Response time (ms)")
+        fig.subplots_adjust(bottom=0.3)
+        fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
+
+def barplot_cache_misses(xs, ys, stds, labels, out_filename):
+    fig, ax = plt.subplots(figsize=(10, 7))
+    width = 0.1
+    bars = []
+    x = np.arange(len(xs))
+    bars.append(ax.bar(x - 3*width, ys[0], width, label=labels[0]))
+    bars.append(ax.bar(x - 2*width, ys[1], width, label=labels[1]))
+    bars.append(ax.bar(x - width, ys[2], width, label=labels[2]))
+    bars.append(ax.bar(x, ys[3], width, label=labels[3]))
+    bars.append(ax.bar(x + width, ys[4], width, label=labels[4]))
+    bars.append(ax.bar(x + 2*width, ys[5], width, label=labels[5]))
+    bars.append(ax.bar(x + 3*width, ys[6], width, label=labels[6]))
+    ax.errorbar(x - 3*width, ys[0], yerr=stds[0], fmt="|", color="0")
+    ax.errorbar(x - 2*width, ys[1], yerr=stds[1], fmt="|", color="0")
+    ax.errorbar(x - width, ys[2], yerr=stds[2], fmt="|", color="0")
+    ax.errorbar(x, ys[3], yerr=stds[3], fmt="|", color="0")
+    ax.errorbar(x + width, ys[4], yerr=stds[4], fmt="|", color="0")
+    ax.errorbar(x + 2*width, ys[5], yerr=stds[5], fmt="|", color="0")
+    ax.errorbar(x + 3*width, ys[6], yerr=stds[6], fmt="|", color="0")
+
+    #ax.set_xlabel("Perf metrics")
+    ax.set_ylabel("Misses (%)")
+    ax.legend(loc='upper right')
+    
+    ax.set_title("Mean percentage of misses for each metric for every optimization levels")
+    ax.set_xticks(x, labels=xs)
+    ax.set_axisbelow(True)
+    plt.xticks(rotation=80)
+    plt.grid(axis='y', linestyle='dashed')
+    fig.tight_layout()
+    plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
+    plt.close()
 
 
     
@@ -126,6 +172,8 @@ def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename):
 if __name__ == "__main__":
     if not os.path.exists(PLOTS_DIRECTORY):
         os.makedirs(PLOTS_DIRECTORY)
+
+    ## Response times ##
     data_8 = []
     data_128 = []
     labels_8 = []
@@ -139,9 +187,67 @@ if __name__ == "__main__":
         else:
             labels_8.append("Optim="+OPTI_NAMES[int(df.iloc[0]["opti"])]+ ", " + "ksize="+str(df.iloc[0]["ksize"]))
             data_8.append(np.array(df["rtime"].tolist()) / 1000)
-    boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot.pdf")
+    boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_split.pdf")
+    boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_single.pdf", "single")
+
+    ## Perf measurements ##
+    df = pd.read_csv(FILENAME_PERF)
+
+    nb_metrics = 7
+    xs = []
+    ys = [[] for i in range(nb_metrics)]
+    stds = [[] for i in range(nb_metrics)]
+    labels = ('cache-misses', 'dTLB-load-misses', 'dTLB-store-misses', 'iTLB-load-misses', 'L1-dcache-load-misses', 'LLC-load-misses', 'LLC-store-misses')
+    for ksize in KSIZES:    
+        for opti in OPTIS:
+            xs.append("Optim="+OPTI_NAMES[int(df.iloc[0]["opti"])]+ ", " + "ksize="+str(df.iloc[0]["ksize"]))
+            # cache misses
+            loads = np.array(df["cache-references"][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            misses = np.array(df['cache-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            percentage = (np.array(misses) / loads) * 100
+            ys[0].append(np.mean(percentage))
+            stds[0].append(np.std(percentage))
+            # dTLB-load-misses
+            loads = np.array(df['dTLB-loads'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            misses = np.array(df['dTLB-load-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            percentage = (np.array(misses) / loads) * 100
+            ys[1].append(np.mean(percentage))
+            stds[1].append(np.std(percentage))
+            # dTLB-store-misses
+            loads = np.array(df['dTLB-stores'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            misses = np.array(df['dTLB-store-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            percentage = (np.array(misses) / loads) * 100
+            ys[2].append(np.mean(percentage))
+            stds[2].append(np.std(percentage))
+            # iTLB-load-misses
+            loads = np.array(df['iTLB-loads'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            misses = np.array(df['iTLB-load-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            percentage = (np.array(misses) / loads) * 100
+            ys[3].append(np.mean(percentage))
+            stds[3].append(np.std(percentage))
+            # L1-dcache-load-misses
+            loads = np.array(df['L1-dcache-loads'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            misses = np.array(df['L1-dcache-load-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            percentage = (np.array(misses) / loads) * 100
+            ys[4].append(np.mean(percentage))
+            stds[4].append(np.std(percentage))
+            # LLC-load-misses
+            loads = np.array(df['LLC-loads'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            misses = np.array(df['LLC-load-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            percentage = (np.array(misses) / loads) * 100
+            ys[5].append(np.mean(percentage))
+            stds[5].append(np.std(percentage))
+            # LLC-store-misses
+            loads = np.array(df['LLC-stores'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            misses = np.array(df['LLC-store-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+            percentage = (np.array(misses) / loads) * 100
+            ys[6].append(np.mean(percentage))
+            stds[6].append(np.std(percentage))
+    
+    barplot_cache_misses(xs, ys, stds, labels, "cache_misses_percentage.pdf")
 
 
+    # TODO: graph with total number of miss / loads
         
     """
     corr_throughput = df_throughput.corr()
