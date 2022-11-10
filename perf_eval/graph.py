@@ -2,7 +2,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sn
+import os
 
+
+KSIZES = (8, 128)
+OPTIS = (0, 1, 2, 3)
+FILENAME_PERF = "data/perf_measurements.csv"
+FILENAMES_RTIME = ["data/rtime_key_"+str(ksize)+"_opti_"+str(opti)+".csv" for ksize in KSIZES for opti in OPTIS]
+PLOTS_DIRECTORY = "plots_phase2"
+OPTI_NAMES = ("None", "Line by line", "Unroll", "Both")
 
 def barplot2k(xs: list, ys: list, stds: list, labels: list, x_axis_name: str, y_axis_name: str, title: str, filename: str):
     fig, ax = plt.subplots(figsize=(10, 7))
@@ -96,13 +104,45 @@ def get_values_single_factor_time(df, ys, stds, varying_factor, fixed_factors):
         stds.append(std)
 
 
+def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename):
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig.suptitle("Response times with respect to key size and optimization")
+    bp = ax1.boxplot(data_8)
+    bp = ax2.boxplot(data_128)
+    fig.set_figheight(9)
+    fig.set_figwidth(16)
+    ax1.set_xticks(np.arange(1, len(labels_8)+1), [label for label in labels_8], rotation=75)
+    ax2.set_xticks(np.arange(1, len(labels_128)+1), [label for label in labels_128], rotation=75)
+    ax1.set_ylim(bottom=0)
+    ax2.set_ylim(bottom=0)
+    ax1.set_ylabel("Response time (ms)")
+    fig.subplots_adjust(bottom=0.3)
+    fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
+
+
     
 
 if __name__ == "__main__":
-    FILENAME_THROUGHPUT = "data/2k_throughput_hard.csv"
-    FILENAME_RESPONSE_TIME = "data/2k_response_time2_easy.csv"
-    df_throughput = pd.read_csv(FILENAME_THROUGHPUT)
-    df_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
+    if not os.path.exists(PLOTS_DIRECTORY):
+        os.makedirs(PLOTS_DIRECTORY)
+    data_8 = []
+    data_128 = []
+    labels_8 = []
+    labels_128 = []
+    for filename in FILENAMES_RTIME:
+        df = pd.read_csv(filename)
+        print(df.describe())
+        if (df.iloc[0]["ksize"] == 128):
+            labels_128.append("Optim="+OPTI_NAMES[int(df.iloc[0]["opti"])]+ ", " + "ksize="+str(df.iloc[0]["ksize"]))
+            data_128.append(np.array(df["rtime"].tolist()) / 1000)
+        else:
+            labels_8.append("Optim="+OPTI_NAMES[int(df.iloc[0]["opti"])]+ ", " + "ksize="+str(df.iloc[0]["ksize"]))
+            data_8.append(np.array(df["rtime"].tolist()) / 1000)
+    boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot.pdf")
+
+
+        
+    """
     corr_throughput = df_throughput.corr()
     corr_res_time = df_res_time.corr()
     print(corr_throughput.head())
@@ -117,146 +157,8 @@ if __name__ == "__main__":
     plt.margins(5)
     plt.savefig("data/response_time_correlation.pdf")
     plt.close()
+    """
 
 
                 
-    ### Throughput versus number of threads
-    labels = ("2 threads", "4 threads")
-    xs = []
-    ys = [[], []]
-    stds = [[], []]
-    #get_values_for_2K(df_throughput, xs, ys, stds, "throughput")
-    #reverse array
-    xs = xs[::-1]
-    ys[0] = ys[0][::-1]
-    stds[0] = stds[0][::-1]
-    ys[1] = ys[1][::-1]
-    stds[1] = stds[1][::-1]
-    
-    x_axis_name = "Parameters"
-    y_axis_name = "Throughput [requests/s]"
-    title = "Throughput versus number of threads"
-    filename = "data/throughput_vs_threads"
-    #barplot2k(xs, ys, stds, labels, x_axis_name, y_axis_name, title, filename)
-
-
-    ### Mean response time versus number of threads
-    labels = ("2 threads", "4 threads")
-    xs = []
-    ys = [[], []]
-    stds = [[], []]
-    get_values_for_2K(df_res_time, xs, ys, stds, "response_time")
-    #reverse array
-    #xs = xs[::-1]
-    #ys[:] = ys[:][::-1]
-    #stds[:] = stds[:][::-1]
-    
-    x_axis_name = "Parameters"
-    y_axis_name = "Mean response time [ms]"
-    title = "Mean response time versus number of threads"
-    filename = "data/mean_response_time_vs_threads"
-    barplot2k(xs, ys, stds, labels, x_axis_name, y_axis_name, title, filename)
-
-
-    
-    ### Threads variations
-    xs = ["1","2","3","4","5","6","7","8"] # xs, ys and stds, same dimension
-    FILENAME_THROUGHPUT = "data/thread_throughput2.csv"
-    FILENAME_RESPONSE_TIME = "data/thread_response_time2.csv"
-    df_thread_throughput = pd.read_csv(FILENAME_THROUGHPUT)
-    df_thread_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
-    ys = []
-    stds = []
-    label="file_size=512, key_size=256, request_rate=100"
-    get_values_single_factor_throughput(df_thread_throughput, ys, stds, "thread", [("fsize",512),("ksize",256),("request_rate",100)])
-    x_axis_name = "Threads"
-    y_axis_name = "Throughput [requests/s]"
-    title = "Throughput in terms of threads"
-    filename = "data/thread_throughput"
-    barplot_single_factor(xs, ys, stds, label, x_axis_name, y_axis_name, title, filename)
-
-    ys = []
-    stds = []
-    get_values_single_factor_time(df_thread_res_time, ys, stds, "thread", [("fsize",512),("ksize",256),("request_rate",100)])
-    y_axis_name = "Mean response time [ms]"
-    title = "Response time in terms of threads"
-    filename = "data/thread_res_time"
-    barplot_single_factor(xs, ys, stds, label, x_axis_name, y_axis_name, title, filename)
-    
-
-    ### FSize variations
-    xs = ["64","128","256","512"] # xs, ys and stds, same dimension
-    FILENAME_THROUGHPUT = "data/fsize_queuing_throughput.csv"
-    FILENAME_RESPONSE_TIME = "data/fsize_response_time2.csv"
-    df_file_throughput = pd.read_csv(FILENAME_THROUGHPUT)
-    df_file_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
-    ys = []
-    stds = []
-    label="key_size=32, request_rate=1000, thread=1"
-    get_values_single_factor_throughput(df_file_throughput, ys, stds, "fsize", [("ksize",32),("request_rate",1000),("thread",1)])
-    x_axis_name = "file size [bytes]"
-    y_axis_name = "Throughput [requests/s]"
-    title = "Throughput in terms of file sizes"
-    filename = "data/fsize_throughput"
-    barplot_single_factor(xs, ys, stds, label, x_axis_name, y_axis_name, title, filename)
-
-    ys = []
-    stds = []
-    label="key_size=32, request_rate=100, thread=1"
-    get_values_single_factor_time(df_file_res_time, ys, stds, "fsize", [("ksize",32),("request_rate",100),("thread",1)])
-    y_axis_name = "Mean response time [ms]"
-    title = "Response time in terms of file sizes"
-    filename = "data/fsize_res_time"
-    barplot_single_factor(xs, ys, stds, label, x_axis_name, y_axis_name, title, filename)
-
-    ### KSize variations
-
-    xs = ["8","16","32","64","128"] # xs, ys and stds, same dimension
-    FILENAME_THROUGHPUT = "data/ksize_queuing_throughput.csv"
-    FILENAME_RESPONSE_TIME = "data/ksize_response_time2.csv"
-    df_key_throughput = pd.read_csv(FILENAME_THROUGHPUT)
-    df_key_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
-    ys = []
-    stds = []
-    label="file_size=256, request_rate=500, thread=1"
-    get_values_single_factor_throughput(df_key_throughput, ys, stds, "ksize", [("fsize",256),("request_rate",500),("thread",1)])
-    x_axis_name = "key size [bytes]"
-    y_axis_name = "Throughput [requests/s]"
-    title = "Throughput in terms of key sizes"
-    filename = "data/ksize_throughput"
-    barplot_single_factor(xs, ys, stds, label, x_axis_name, y_axis_name, title, filename)
-
-    ys = []
-    stds = []
-    label="file_size=256, request_rate=100, thread=1"
-    get_values_single_factor_time(df_key_res_time, ys, stds, "ksize", [("fsize",256),("request_rate",100),("thread",1)])
-    y_axis_name = "Mean response time [ms]"
-    title = "Response time in terms of key sizes"
-    filename = "data/ksize_res_time"
-    barplot_single_factor(xs, ys, stds, label, x_axis_name, y_axis_name, title, filename)
-
-    ### Requests variations
-    
-    xs = ["300","600","900","1200","1500"] # xs, ys and stds, same dimension
-    FILENAME_THROUGHPUT = "data/rate_throughput2.csv"
-    FILENAME_RESPONSE_TIME = "data/rate_response_time2.csv"
-    df_rate_throughput = pd.read_csv(FILENAME_THROUGHPUT)
-    df_rate_res_time = pd.read_csv(FILENAME_RESPONSE_TIME)
-    ys = []
-    stds = []
-    label="file_size=256, key_size=32, thread=1"
-    get_values_single_factor_throughput(df_rate_throughput, ys, stds, "request_rate", [("fsize",256),("ksize",32),("thread",1)])
-    x_axis_name = "Mean request rate [requests/s]"
-    y_axis_name = "Throughput [requests/s]"
-    title = "Throughput in terms of mean request rates"
-    filename = "data/rate_throughput"
-    plot_single_factor(xs, ys, stds, label, x_axis_name, y_axis_name, title, filename)
-
-    ys = []
-    stds = []
-    get_values_single_factor_time(df_rate_res_time, ys, stds, "request_rate", [("fsize",256),("ksize",32),("thread",1)])
-    y_axis_name = "Mean response time [ms]"
-    title = "Response time in terms of mean request rates"
-    filename = "data/rate_res_time"
-    plot_single_factor(xs, ys, stds, label, x_axis_name, y_axis_name, title, filename)
     
