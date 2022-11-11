@@ -123,7 +123,7 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
             }
         }
     #else
-        uint32_t i, j, k r, key_block, index_encry, index_file;
+        uint32_t i, j, k, r, key_block, index_encry, index_file;
         for (i = 0; i < file_size; i++) {
             key_block = (i % key_size) * key_size;
             index_encry = i*file_size;
