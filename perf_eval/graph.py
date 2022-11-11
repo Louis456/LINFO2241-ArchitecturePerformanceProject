@@ -133,7 +133,7 @@ def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename, type="sp
         fig.subplots_adjust(bottom=0.3)
         fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
 
-def barplot_cache_misses(xs, ys, stds, labels, out_filename):
+def barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, out_filename):
     fig, ax = plt.subplots(figsize=(10, 7))
     width = 0.1
     x = np.arange(len(xs))
@@ -142,11 +142,10 @@ def barplot_cache_misses(xs, ys, stds, labels, out_filename):
     for i in range(nb_bars):
         ax.bar(x + width * (v + i), ys[i], width, label=labels[i], yerr=stds[i], alpha=0.95, capsize=4)
 
-    #ax.set_xlabel("Perf metrics")
-    ax.set_ylabel("Misses (%)")
+    ax.set_ylabel(ylabel)
     ax.legend(loc='upper right')
     
-    ax.set_title("Mean percentage of misses for Perf metrics for every optimization levels and key sizes")
+    ax.set_title(title)
     ax.set_xticks(x, labels=xs)
     ax.set_axisbelow(True)
     plt.xticks(rotation=70)
@@ -162,7 +161,9 @@ if __name__ == "__main__":
     if not os.path.exists(PLOTS_DIRECTORY):
         os.makedirs(PLOTS_DIRECTORY)
 
-    ## Response times ##
+    ########################
+    #### Response times ####
+    ########################
     data_8 = []
     data_128 = []
     labels_8 = []
@@ -179,9 +180,15 @@ if __name__ == "__main__":
     boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_split.pdf")
     boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_single.pdf", "single")
 
-    ## Perf measurements ##
+
+
+
+    ###########################
+    #### Perf measurements ####
+    ###########################
     df = pd.read_csv(FILENAME_PERF)
 
+    # Percentage of misses
     labels = ('cache-misses', 'dTLB-load-misses', 'dTLB-store-misses', 'L1-dcache-load-misses', 'LLC-load-misses', 'LLC-store-misses') #'iTLB-load-misses'
     xs = []
     ys = [[] for i in range(len(labels))]
@@ -196,10 +203,45 @@ if __name__ == "__main__":
                 percentage = (np.array(misses) / loads) * 100
                 ys[i].append(np.mean(percentage))
                 stds[i].append(np.std(percentage)) 
-    barplot_cache_misses(xs, ys, stds, labels, "cache_misses_percentage.pdf")
+    ylabel = "Misses (%)"
+    title = "Mean percentage of misses for Perf metrics for every optimization levels and key sizes"
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_percentage.pdf")
 
 
-    # TODO: graph with total number of miss / loads
+    # Total number of misses
+    labels = ('cache-misses', 'dTLB-load-misses', 'dTLB-store-misses', 'iTLB-load-misses', 'L1-dcache-load-misses', 'LLC-load-misses', 'LLC-store-misses')
+    xs = []
+    ys = [[] for i in range(len(labels))]
+    stds = [[] for i in range(len(labels))]
+    for ksize in KSIZES:    
+        for opti in OPTIS:
+            xs.append("Optim="+OPTI_NAMES[opti]+ ", " + "ksize="+str(ksize))
+            for i, label in enumerate(labels):
+                misses = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+                ys[i].append(np.mean(misses))
+                stds[i].append(np.std(misses)) 
+    ylabel = "Number of misses"
+    title = "Mean number of misses for Perf metrics for every optimization levels and key sizes"
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf")
+
+
+    # Total number of loads
+    labels = ('cache-references','dTLB-loads','dTLB-stores','iTLB-loads','L1-dcache-loads','LLC-loads','LLC-stores')
+    xs = []
+    ys = [[] for i in range(len(labels))]
+    stds = [[] for i in range(len(labels))]
+    for ksize in KSIZES:    
+        for opti in OPTIS:
+            xs.append("Optim="+OPTI_NAMES[opti]+ ", " + "ksize="+str(ksize))
+            for i, label in enumerate(labels):
+                loads = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+                ys[i].append(np.mean(loads))
+                stds[i].append(np.std(loads)) 
+    ylabel = "Number of loads"
+    title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf")
+
+
         
     """
     corr_throughput = df_throughput.corr()
