@@ -154,11 +154,10 @@ def barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, out_filename, leg
     plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
     plt.close()
 
-def barplot_single(xs, ys, stds, label, xlabel, ylabel, title, out_filename, legend_loc='upper right'):
+def barplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc='upper right'):
     fig  = plt.figure()
     x = np.arange(len(xs))
     plt.bar(x, ys, label=label, yerr=stds, capsize=4)
-    plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.xticks(x, labels=xs)
     plt.title(title)
@@ -249,10 +248,11 @@ if __name__ == "__main__":
                 misses = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
                 ys[i].append(np.mean(misses))
                 stds[i].append(np.std(misses))
-
-    #for i, y in enumerate(ys):
-        #barplot_single(xs, y, np.std(y), label, xlabel, ylabel, title, )
-
+    # single plot
+    for i, label in enumerate(labels):
+        ylabel = "Number of misses"
+        barplot_single(xs, ys[i], np.std(ys[i]), label, ylabel, title, out_filename)
+    # multi plot
     ylabel = "Number of misses"
     title = "Mean number of misses for Perf metrics for every optimization levels and key sizes"
     legend_loc = "upper left"
@@ -270,7 +270,8 @@ if __name__ == "__main__":
             for i, label in enumerate(labels):
                 loads = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
                 ys[i].append(np.mean(loads))
-                stds[i].append(np.std(loads)) 
+                stds[i].append(np.std(loads))
+    # multi plot
     ylabel = "Number of loads"
     title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
     legend_loc = "upper left"
