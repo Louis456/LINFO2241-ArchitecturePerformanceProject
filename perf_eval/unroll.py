@@ -31,8 +31,6 @@ def init_file(filename: str, headers: str):
         file.write(headers)
 
 def script_server():
-    
-    
     process = subprocess.Popen(['./server-optim', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=PARENT_PATH)
     return process
     
@@ -47,7 +45,9 @@ if __name__ == "__main__":
     filename = "data/unroll_measurements.csv"
     init_file(filename, "unroll,rtt,fsize,ksize,request_rate,thread,iteration\n")
 
+    print("Start")
     for it in range(NB_ITERATIONS):
+        print("It:", it)
         server_proc = script_server()
         time.sleep(1)
         client_proc = script_client()
@@ -59,9 +59,5 @@ if __name__ == "__main__":
 
         with open(filename, 'a') as file:
             for rt in response_times:
-                file.write("{0},{1},{2},{3},{4},{5}\n".format(unroll, rt, FSIZE, KSIZE, REQUEST_RATE, THREAD, it))
-
-        
-    "rtt, unroll"
-
-    "2323,8"
+                file.write("{0},{1},{2},{3},{4},{5},{6}\n".format(unroll, rt, FSIZE, KSIZE, REQUEST_RATE, THREAD, it))
+    print("done")
