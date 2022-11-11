@@ -159,6 +159,7 @@ def barplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc=
     fig.set_figheight(9)
     fig.set_figwidth(8)
     x = np.arange(len(xs))
+    print(stds)
     plt.bar(x, ys, label=label, yerr=stds, capsize=4)
     plt.ylabel(ylabel)
     plt.xticks(x, labels=xs)
