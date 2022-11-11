@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     struct sockaddr_storage their_addr; 
     socklen_t addr_size;
     int optval = 1;
-    int max_connection_in_queue = 8192;
+    int max_connection_in_queue = 128;
 
     //char s[INET6_ADDRSTRLEN];
 
