@@ -27,8 +27,8 @@ def make_clean_make_all():
 def init_file(filename: str, headers: str):
     if not os.path.exists('data'):
         os.makedirs('data')
-    with open(filename, 'w') as file:
-        file.write(headers)
+    #with open(filename, 'w') as file:
+        #file.write(headers)
 
 def script_server():
     process = subprocess.Popen(['./server-optim', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=PARENT_PATH)

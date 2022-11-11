@@ -9,6 +9,7 @@ import os
 KSIZES = (8, 128)
 OPTIS = (0, 1, 2, 3)
 FILENAME_PERF = "data/perf_measurements.csv"
+FILENAME_UNROLL = "data/unroll_measurements.csv"
 FILENAMES_RTIME = ["data/rtime_key_"+str(ksize)+"_opti_"+str(opti)+".csv" for ksize in KSIZES for opti in OPTIS]
 PLOTS_DIRECTORY = "plots_phase2"
 OPTI_NAMES = ("None", "Line by line", "Unroll", "Both")
@@ -241,6 +242,16 @@ if __name__ == "__main__":
 
 
     ###########################
+    ###### Unroll size ########
+    ###########################
+    df = pd.read_csv(FILENAME_UNROLL)
+    title = "Mean response time by the unrolling size"
+    boxplot_single(xs, ys, ylabel, title, "unroll_measurements.pdf")
+
+
+
+
+    ###########################
     #### Perf measurements ####
     ###########################
     df = pd.read_csv(FILENAME_PERF)
@@ -339,3 +350,5 @@ if __name__ == "__main__":
     # multi plot
     title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf")
+
+

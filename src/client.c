@@ -26,7 +26,7 @@ const bool showDebug = false;
 
 int main(int argc, char **argv) {
 
-    printf("unroll 32");
+    printf("unroll 16");
 
     srandom(time(NULL));
 
