@@ -232,6 +232,11 @@ if __name__ == "__main__":
                 ys[i].append(np.mean(percentage))
                 stds[i].append(np.std(percentage)) 
     ylabel = "Misses (%)"
+    # single plot
+    for i, label in enumerate(labels):
+        out_filename = "cache_misses_percentage_"+label+".pdf"
+        barplot_single(xs, ys[i], np.std(ys[i]), label, ylabel, title, out_filename)
+    # multi plot
     title = "Mean percentage of misses for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_percentage.pdf")
 
@@ -271,8 +276,12 @@ if __name__ == "__main__":
                 loads = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
                 ys[i].append(np.mean(loads))
                 stds[i].append(np.std(loads))
-    # multi plot
     ylabel = "Number of loads"
+    # single plot
+    for i, label in enumerate(labels):
+        out_filename = "cache_loads_total_number_"+label+".pdf"
+        barplot_single(xs, ys[i], np.std(ys[i]), label, ylabel, title, out_filename)
+    # multi plot
     title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
     legend_loc = "upper left"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf", legend_loc)
