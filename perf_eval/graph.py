@@ -171,12 +171,12 @@ def barplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc=
     plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
     plt.close()
 
-
     
 
 if __name__ == "__main__":
     if not os.path.exists(PLOTS_DIRECTORY):
         os.makedirs(PLOTS_DIRECTORY)
+
 
     ############################
     #### Correlation matrix ####
@@ -192,6 +192,7 @@ if __name__ == "__main__":
     plt.margins(5)
     plt.savefig("plots_phase2/rtime_correlation.pdf")
     plt.close()
+
 
     ########################
     #### Response times ####
@@ -211,8 +212,6 @@ if __name__ == "__main__":
             data_8.append(np.array(df["rtime"].tolist()) / 1000)
     boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_split.pdf")
     boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_single.pdf", "single")
-
-
 
 
     ###########################
@@ -240,7 +239,7 @@ if __name__ == "__main__":
     for i, label in enumerate(labels):
         title="Mean percentage of "+label+" for every optimization levels and key sizes"
         out_filename = "cache_misses_percentage_"+label+".pdf"
-        barplot_single(xs, ys[i], np.std(ys[i]), label, ylabel, title, out_filename)
+        barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
     # multi plot
     title = "Mean percentage of misses for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_percentage.pdf", "upper right")
@@ -263,7 +262,7 @@ if __name__ == "__main__":
     for i, label in enumerate(labels):
         title="Mean number of "+label+" for every optimization levels and key sizes"
         out_filename = "cache_misses_total_number_"+label+".pdf"
-        barplot_single(xs, ys[i], np.std(ys[i]), label, ylabel, title, out_filename)
+        barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
     # multi plot
     title = "Mean number of misses for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf")
@@ -286,7 +285,7 @@ if __name__ == "__main__":
     for i, label in enumerate(labels):
         title="Mean number of "+label+" for every optimization levels and key sizes"
         out_filename = "cache_loads_total_number_"+label+".pdf"
-        barplot_single(xs, ys[i], np.std(ys[i]), label, ylabel, title, out_filename)
+        barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
     # multi plot
     title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf")
