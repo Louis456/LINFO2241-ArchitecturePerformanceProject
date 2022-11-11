@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
     uint32_t findex = 0;
     uint32_t *key = NULL;
     int numbytes;
-    uint32_t key_payload_length;
+    uint32_t key_payload_length = 0;
     uint32_t recv_done;
 
     // response variables
