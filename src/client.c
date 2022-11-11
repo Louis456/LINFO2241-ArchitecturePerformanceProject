@@ -25,6 +25,9 @@ int print_usage(char *prog_name) {
 const bool showDebug = false;
 
 int main(int argc, char **argv) {
+
+    printf("unroll 2");
+
     srandom(time(NULL));
 
     char *server_ip_port = NULL;
