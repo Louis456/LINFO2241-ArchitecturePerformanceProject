@@ -46,7 +46,7 @@ if __name__ == "__main__":
     filename = "data/unroll_measurements.csv"
     init_file(filename, "unroll,rtt,fsize,ksize,request_rate,thread,iteration\n")
 
-    for it in NB_ITERATIONS:
+    for it in range(len(NB_ITERATIONS)):
         server_proc = script_server()
         time.sleep(1)
         client_proc = script_client()
