@@ -185,7 +185,7 @@ def boxplot_single(xs, ys, ylabel, title, out_filename):
     ax.boxplot(ys, labels=xs)
     ax.set_ylabel(ylabel)
     ax.set_ylim(bottom=0)
-    ax.set_xticks(rotation=70)
+    plt.xticks(rotation=70)
     #ax.set_xticks(x, labels=xs, rotation=70)
     plt.title(title)
     plt.grid(axis='y', linestyle='dashed')
