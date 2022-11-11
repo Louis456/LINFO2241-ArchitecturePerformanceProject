@@ -245,7 +245,7 @@ if __name__ == "__main__":
     ###### Unroll size ########
     ###########################
     df = pd.read_csv(FILENAME_UNROLL)
-    unrolls = (2, 4, 8, 16, 32)
+    unrolls = (1, 2, 4, 8, 16, 32, 64)
     xs = ["ksize=128, opti=Both, Unroll="+str(unroll) for unroll in unrolls]
     ys = [df['rtt'][df["unroll"] == unroll].tolist() for unroll in unrolls ]
     title = "Response time by the unrolling factor"
