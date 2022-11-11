@@ -248,12 +248,12 @@ if __name__ == "__main__":
                 misses = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
                 ys[i].append(np.mean(misses))
                 stds[i].append(np.std(misses))
+    ylabel = "Number of misses"
     # single plot
     for i, label in enumerate(labels):
-        ylabel = "Number of misses"
+        out_filename = "cache_misses_total_number_"+label+".pdf"
         barplot_single(xs, ys[i], np.std(ys[i]), label, ylabel, title, out_filename)
     # multi plot
-    ylabel = "Number of misses"
     title = "Mean number of misses for Perf metrics for every optimization levels and key sizes"
     legend_loc = "upper left"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf", legend_loc)
