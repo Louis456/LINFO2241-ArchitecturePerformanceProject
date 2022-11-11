@@ -129,7 +129,7 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
         uint32_t key_block;
         uint32_t index_encry;
         uint32_t index_file;
-        for (uint32_t i = 0; i < file_size; i++) {
+        for (uint32_t i = 0; i < file_size; i+=2) {
             key_block = (i % key_size) * key_size;
             index_encry = i*file_size;
             index_file = (i-(i%key_size))*file_size;
@@ -140,6 +140,21 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
             for (uint32_t k = 1; k < key_size; k++) {
                 r = key[key_block + k];
                 index_file = (i-(i%key_size)+k)*file_size;
+                for(uint32_t j = 0; j < file_size; j+=2) {
+                    encrypted_file[index_encry + j] += r * file[index_file+j];
+                    encrypted_file[index_encry + j+1] += r * file[index_file+j+1];
+                }
+            }
+            key_block = ((i+1) % key_size) * key_size;
+            index_encry = (i+1)*file_size;
+            index_file = ((i+1)-((i+1)%key_size))*file_size;
+            for(uint32_t j = 0; j < file_size; j+=2) {
+                encrypted_file[index_encry + j] = key[key_block] * file[index_file + j];
+                encrypted_file[index_encry + j+1] = key[key_block] * file[index_file + j+1];
+            }
+            for (uint32_t k = 1; k < key_size; k++) {
+                r = key[key_block + k];
+                index_file = ((i+1)-((i+1)%key_size)+k)*file_size;
                 for(uint32_t j = 0; j < file_size; j+=2) {
                     encrypted_file[index_encry + j] += r * file[index_file+j];
                     encrypted_file[index_encry + j+1] += r * file[index_file+j+1];

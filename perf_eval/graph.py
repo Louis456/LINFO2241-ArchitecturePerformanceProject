@@ -118,6 +118,8 @@ def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename, type="sp
         ax2.set_ylim(bottom=0)
         ax1.set_ylabel("Response time (ms)")
         ax2.set_ylabel("Response time (ms)")
+        ax1.grid(axis='y', linestyle='dashed')
+        ax2.grid(axis='y', linestyle='dashed')
         fig.subplots_adjust(bottom=0.3)
         fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
     else:
@@ -130,8 +132,9 @@ def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename, type="sp
         ax.set_xticks(np.arange(1, len(labels)+1), [label for label in labels], rotation=75)
         ax.set_ylim(bottom=0)
         ax.set_ylabel("Response time (ms)")
-        fig.subplots_adjust(bottom=0.3)
-        fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
+        ax.grid(axis='y', linestyle='dashed')
+    fig.subplots_adjust(bottom=0.3)
+    fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
 
 def barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, out_filename, legend_loc='upper left'):
     fig, ax = plt.subplots(figsize=(10, 7))
@@ -165,6 +168,23 @@ def barplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc=
     plt.xticks(rotation=70)
     plt.title(title)
     plt.legend(loc=legend_loc)
+    plt.grid(axis='y', linestyle='dashed')
+    plt.rc('axes', axisbelow=True)
+    #plt.ticklabel_format(style='plain', axis='y')
+    fig.subplots_adjust(bottom=0.3)
+    plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
+    plt.close()
+
+def boxplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc='upper left'):
+    fig, ax = plt.subplots()
+    fig.set_figheight(9)
+    fig.set_figwidth(8)
+    x = np.arange(len(xs))
+    ax.boxplot([ys])
+    ax.set_ylabel(ylabel)
+    ax.set_ylim(bottom=0)
+    ax.set_xticks(x, labels=xs, rotation=70)
+    plt.title(title)
     plt.grid(axis='y', linestyle='dashed')
     plt.rc('axes', axisbelow=True)
     #plt.ticklabel_format(style='plain', axis='y')
@@ -240,7 +260,7 @@ if __name__ == "__main__":
     for i, label in enumerate(labels):
         title="Mean percentage of "+label+" for every optimization levels and key sizes"
         out_filename = "cache_misses_percentage_"+label+".pdf"
-        barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
+        boxplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
     # multi plot
     title = "Mean percentage of misses for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_percentage.pdf", "upper right")
@@ -263,7 +283,7 @@ if __name__ == "__main__":
     for i, label in enumerate(labels):
         title="Mean number of "+label+" for every optimization levels and key sizes"
         out_filename = "cache_misses_total_number_"+label+".pdf"
-        barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
+        boxplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
     # multi plot
     title = "Mean number of misses for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf")
@@ -286,7 +306,7 @@ if __name__ == "__main__":
     for i, label in enumerate(labels):
         title="Mean number of "+label+" for every optimization levels and key sizes"
         out_filename = "cache_loads_total_number_"+label+".pdf"
-        barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
+        boxplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
     # multi plot
     title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf")
