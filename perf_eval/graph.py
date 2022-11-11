@@ -181,11 +181,11 @@ def boxplot_single(xs, ys, ylabel, title, out_filename):
     fig, ax = plt.subplots()
     fig.set_figheight(9)
     fig.set_figwidth(8)
-    x = np.arange(len(xs))
-    ax.boxplot(ys)
+    #x = np.arange(len(xs))
+    ax.boxplot(ys, labels=xs)
     ax.set_ylabel(ylabel)
     ax.set_ylim(bottom=0)
-    ax.set_xticks(x, labels=xs, rotation=70)
+    #ax.set_xticks(x, labels=xs, rotation=70)
     plt.title(title)
     plt.grid(axis='y', linestyle='dashed')
     plt.rc('axes', axisbelow=True)
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     df = pd.read_csv(FILENAME_UNROLL)
     unrolls = (1, 2, 4, 8, 16, 32, 64)
     xs = ["ksize=128, opti=Both, Unroll="+str(unroll) for unroll in unrolls]
-    ys = [df['rtt'][df["unroll"] == unroll].tolist() for unroll in unrolls ]
+    ys = [np.array(df['rtt'][df["unroll"] == unroll].tolist())/1000 for unroll in unrolls ]
     title = "Response time by the unrolling factor"
     ylabel = "Response time (ms)"
     boxplot_single(xs, ys, ylabel, title, "unroll_measurements.pdf")
