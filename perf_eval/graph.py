@@ -136,31 +136,20 @@ def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename, type="sp
 def barplot_cache_misses(xs, ys, stds, labels, out_filename):
     fig, ax = plt.subplots(figsize=(10, 7))
     width = 0.1
-    bars = []
     x = np.arange(len(xs))
-    bars.append(ax.bar(x - 3*width, ys[0], width, label=labels[0]))
-    bars.append(ax.bar(x - 2*width, ys[1], width, label=labels[1]))
-    bars.append(ax.bar(x - width, ys[2], width, label=labels[2]))
-    bars.append(ax.bar(x, ys[3], width, label=labels[3]))
-    bars.append(ax.bar(x + width, ys[4], width, label=labels[4]))
-    bars.append(ax.bar(x + 2*width, ys[5], width, label=labels[5]))
-    bars.append(ax.bar(x + 3*width, ys[6], width, label=labels[6]))
-    ax.errorbar(x - 3*width, ys[0], yerr=stds[0], fmt="|", color="0")
-    ax.errorbar(x - 2*width, ys[1], yerr=stds[1], fmt="|", color="0")
-    ax.errorbar(x - width, ys[2], yerr=stds[2], fmt="|", color="0")
-    ax.errorbar(x, ys[3], yerr=stds[3], fmt="|", color="0")
-    ax.errorbar(x + width, ys[4], yerr=stds[4], fmt="|", color="0")
-    ax.errorbar(x + 2*width, ys[5], yerr=stds[5], fmt="|", color="0")
-    ax.errorbar(x + 3*width, ys[6], yerr=stds[6], fmt="|", color="0")
+    nb_bars = len(ys)
+    v = - (nb_bars-1) / 2
+    for i in range(nb_bars):
+        ax.bar(x + width * (v + i), ys[i], width, label=labels[i], yerr=stds[i], alpha=0.95, capsize=4)
 
     #ax.set_xlabel("Perf metrics")
     ax.set_ylabel("Misses (%)")
     ax.legend(loc='upper right')
     
-    ax.set_title("Mean percentage of misses for each metric for every optimization levels")
+    ax.set_title("Mean percentage of misses for Perf metrics for every optimization levels and key sizes")
     ax.set_xticks(x, labels=xs)
     ax.set_axisbelow(True)
-    plt.xticks(rotation=80)
+    plt.xticks(rotation=70)
     plt.grid(axis='y', linestyle='dashed')
     fig.tight_layout()
     plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
@@ -193,57 +182,20 @@ if __name__ == "__main__":
     ## Perf measurements ##
     df = pd.read_csv(FILENAME_PERF)
 
-    nb_metrics = 7
+    labels = ('cache-misses', 'dTLB-load-misses', 'dTLB-store-misses', 'L1-dcache-load-misses', 'LLC-load-misses', 'LLC-store-misses') #'iTLB-load-misses'
     xs = []
-    ys = [[] for i in range(nb_metrics)]
-    stds = [[] for i in range(nb_metrics)]
-    labels = ('cache-misses', 'dTLB-load-misses', 'dTLB-store-misses', 'iTLB-load-misses', 'L1-dcache-load-misses', 'LLC-load-misses', 'LLC-store-misses')
+    ys = [[] for i in range(len(labels))]
+    stds = [[] for i in range(len(labels))]
     for ksize in KSIZES:    
         for opti in OPTIS:
-            xs.append("Optim="+OPTI_NAMES[int(df.iloc[0]["opti"])]+ ", " + "ksize="+str(df.iloc[0]["ksize"]))
-            # cache misses
-            loads = np.array(df["cache-references"][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            misses = np.array(df['cache-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            percentage = (np.array(misses) / loads) * 100
-            ys[0].append(np.mean(percentage))
-            stds[0].append(np.std(percentage))
-            # dTLB-load-misses
-            loads = np.array(df['dTLB-loads'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            misses = np.array(df['dTLB-load-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            percentage = (np.array(misses) / loads) * 100
-            ys[1].append(np.mean(percentage))
-            stds[1].append(np.std(percentage))
-            # dTLB-store-misses
-            loads = np.array(df['dTLB-stores'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            misses = np.array(df['dTLB-store-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            percentage = (np.array(misses) / loads) * 100
-            ys[2].append(np.mean(percentage))
-            stds[2].append(np.std(percentage))
-            # iTLB-load-misses
-            loads = np.array(df['iTLB-loads'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            misses = np.array(df['iTLB-load-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            percentage = (np.array(misses) / loads) * 100
-            ys[3].append(np.mean(percentage))
-            stds[3].append(np.std(percentage))
-            # L1-dcache-load-misses
-            loads = np.array(df['L1-dcache-loads'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            misses = np.array(df['L1-dcache-load-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            percentage = (np.array(misses) / loads) * 100
-            ys[4].append(np.mean(percentage))
-            stds[4].append(np.std(percentage))
-            # LLC-load-misses
-            loads = np.array(df['LLC-loads'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            misses = np.array(df['LLC-load-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            percentage = (np.array(misses) / loads) * 100
-            ys[5].append(np.mean(percentage))
-            stds[5].append(np.std(percentage))
-            # LLC-store-misses
-            loads = np.array(df['LLC-stores'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            misses = np.array(df['LLC-store-misses'][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
-            percentage = (np.array(misses) / loads) * 100
-            ys[6].append(np.mean(percentage))
-            stds[6].append(np.std(percentage))
-    
+            xs.append("Optim="+OPTI_NAMES[opti]+ ", " + "ksize="+str(ksize))
+            for i, label in enumerate(labels):
+                load_name = label[:-7] + "s" if label != "cache-misses" else "cache-references"
+                loads = np.array(df[load_name][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+                misses = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+                percentage = (np.array(misses) / loads) * 100
+                ys[i].append(np.mean(percentage))
+                stds[i].append(np.std(percentage)) 
     barplot_cache_misses(xs, ys, stds, labels, "cache_misses_percentage.pdf")
 
 

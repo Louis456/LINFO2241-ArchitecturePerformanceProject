@@ -17,7 +17,7 @@ FSIZE = '1024'
 KSIZES = (8, 128)
 THREAD = '1'
 OPTIS = (0, 1, 2, 3)
-NB_ITERATIONS = 1
+NB_ITERATIONS = 10
 PARENT_PATH = Path().resolve().parent
 PERF_ARGS = ("cache-references","cache-misses","dTLB-loads","dTLB-load-misses","dTLB-stores","dTLB-store-misses","iTLB-loads","iTLB-load-misses","L1-dcache-loads","L1-dcache-load-misses","LLC-loads","LLC-load-misses","LLC-stores","LLC-store-misses")
 
