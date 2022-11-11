@@ -133,7 +133,7 @@ def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename, type="sp
         fig.subplots_adjust(bottom=0.3)
         fig.savefig(PLOTS_DIRECTORY+"/"+out_filename)
 
-def barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, out_filename):
+def barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, out_filename, legend_loc='upper right'):
     fig, ax = plt.subplots(figsize=(10, 7))
     width = 0.1
     x = np.arange(len(xs))
@@ -143,7 +143,7 @@ def barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, out_filename):
         ax.bar(x + width * (v + i), ys[i], width, label=labels[i], yerr=stds[i], alpha=0.95, capsize=4)
 
     ax.set_ylabel(ylabel)
-    ax.legend(loc='upper right')
+    ax.legend(loc=legend_loc)
     
     ax.set_title(title)
     ax.set_xticks(x, labels=xs)
@@ -154,12 +154,41 @@ def barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, out_filename):
     plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
     plt.close()
 
+def barplot_single(xs, ys, stds, label, xlabel, ylabel, title, out_filename, legend_loc='upper right'):
+    fig  = plt.figure()
+    x = np.arange(len(xs))
+    plt.bar(x, ys, label=label, yerr=stds, capsize=4)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.xticks(x, labels=xs)
+    plt.title(title)
+    plt.legend(loc=legend_loc)
+    plt.grid(axis='y', linestyle='dashed')
+    plt.rc('axes', axisbelow=True)
+    plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
+    plt.close()
+
 
     
 
 if __name__ == "__main__":
     if not os.path.exists(PLOTS_DIRECTORY):
         os.makedirs(PLOTS_DIRECTORY)
+
+    ############################
+    #### Correlation matrix ####
+    ############################
+    df = pd.read_csv(FILENAMES_RTIME[0])
+    for i in range(1,len(FILENAMES_RTIME)):
+        df_tmp = pd.read_csv(FILENAMES_RTIME[i])
+        df = pd.concat([df, df_tmp], ignore_index=True, sort=True)
+    corr_rtime = df.corr()
+    print(corr_rtime.head())
+    fig, ax = plt.subplots(figsize=(3, 6))
+    sn.heatmap(corr_rtime[["rtime"]], annot=True)
+    plt.margins(5)
+    plt.savefig("plots_phase2/rtime_correlation.pdf")
+    plt.close()
 
     ########################
     #### Response times ####
@@ -219,10 +248,15 @@ if __name__ == "__main__":
             for i, label in enumerate(labels):
                 misses = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
                 ys[i].append(np.mean(misses))
-                stds[i].append(np.std(misses)) 
+                stds[i].append(np.std(misses))
+
+    #for i, y in enumerate(ys):
+        #barplot_single(xs, y, np.std(y), label, xlabel, ylabel, title, )
+
     ylabel = "Number of misses"
     title = "Mean number of misses for Perf metrics for every optimization levels and key sizes"
-    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf")
+    legend_loc = "upper left"
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf", legend_loc)
 
 
     # Total number of loads
@@ -239,26 +273,13 @@ if __name__ == "__main__":
                 stds[i].append(np.std(loads)) 
     ylabel = "Number of loads"
     title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
-    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf")
+    legend_loc = "upper left"
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf", legend_loc)
 
 
         
-    """
-    corr_throughput = df_throughput.corr()
-    corr_res_time = df_res_time.corr()
-    print(corr_throughput.head())
-    print(corr_res_time.head())
-    fig, ax = plt.subplots(figsize=(3, 6))
-    sn.heatmap(corr_throughput[["throughput"]], annot=True)
-    plt.margins(5)
-    plt.savefig("data/throughput_correlation.pdf")
-    plt.close()
-    fig, ax = plt.subplots(figsize=(3, 6))
-    sn.heatmap(corr_res_time[["response_time"]], annot=True, linewidths=0.3)
-    plt.margins(5)
-    plt.savefig("data/response_time_correlation.pdf")
-    plt.close()
-    """
+    
+    
 
 
                 
