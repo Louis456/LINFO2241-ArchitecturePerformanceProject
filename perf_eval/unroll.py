@@ -42,6 +42,7 @@ def script_client():
     return process
 
 if __name__ == "__main__":
+    make_clean_make_all()
 
     filename = "data/unroll_measurements.csv"
     init_file(filename, "unroll,rtt,fsize,ksize,request_rate,thread,iteration\n")
@@ -50,7 +51,7 @@ if __name__ == "__main__":
         server_proc = script_server()
         time.sleep(1)
         client_proc = script_client()
-        server_output = server_proc.communicate()[1].decode()
+        server_output = server_proc.communicate()[0].decode()
         client_output = client_proc.communicate()[0].decode()
 
         response_times = (float(rtime) for rtime in re.findall("response_time=(\d+.?\d*)", client_output))
