@@ -156,14 +156,18 @@ def barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, out_filename, leg
 
 def barplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc='upper left'):
     fig  = plt.figure()
+    fig.set_figheight(9)
+    fig.set_figwidth(8)
     x = np.arange(len(xs))
     plt.bar(x, ys, label=label, yerr=stds, capsize=4)
     plt.ylabel(ylabel)
     plt.xticks(x, labels=xs)
+    plt.xticks(rotation=70)
     plt.title(title)
     plt.legend(loc=legend_loc)
     plt.grid(axis='y', linestyle='dashed')
     plt.rc('axes', axisbelow=True)
+    fig.subplots_adjust(bottom=0.3)
     plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
     plt.close()
 
@@ -262,8 +266,7 @@ if __name__ == "__main__":
         barplot_single(xs, ys[i], np.std(ys[i]), label, ylabel, title, out_filename)
     # multi plot
     title = "Mean number of misses for Perf metrics for every optimization levels and key sizes"
-    legend_loc = "upper left"
-    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf", legend_loc)
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf")
 
 
     # Total number of loads
@@ -286,8 +289,7 @@ if __name__ == "__main__":
         barplot_single(xs, ys[i], np.std(ys[i]), label, ylabel, title, out_filename)
     # multi plot
     title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
-    legend_loc = "upper left"
-    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf", legend_loc)
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf")
 
 
         
