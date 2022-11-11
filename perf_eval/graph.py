@@ -167,7 +167,7 @@ def barplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc=
     plt.legend(loc=legend_loc)
     plt.grid(axis='y', linestyle='dashed')
     plt.rc('axes', axisbelow=True)
-    plt.ticklabel_format(style='plain')
+    #plt.ticklabel_format(style='plain', axis='y')
     fig.subplots_adjust(bottom=0.3)
     plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
     plt.close()
