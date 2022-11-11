@@ -18,6 +18,7 @@
 #include "../headers/threads.h"
 
 uint32_t file_size = 0;
+uint32_t file_byte_size = 0;
 uint32_t **files;
 
 int main(int argc, char **argv) {
@@ -53,16 +54,17 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    file_byte_size = file_size * file_size * sizeof(uint32_t);
     files = malloc(sizeof(void*) * 1000); 
     if (files == NULL) fprintf(stderr, "Error malloc: files\n");
     for (uint32_t i = 0 ; i < 1000; i+=4) {
-        files[i] = aligned_alloc(file_size,file_size*file_size*sizeof(uint32_t));
+        files[i] = aligned_alloc(file_size,file_byte_size);
         if (files[i] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        files[i+1] = aligned_alloc(file_size,file_size*file_size*sizeof(uint32_t));
+        files[i+1] = aligned_alloc(file_size,file_byte_size);
         if (files[i+1] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        files[i+2] = aligned_alloc(file_size,file_size*file_size*sizeof(uint32_t));
+        files[i+2] = aligned_alloc(file_size,file_byte_size);
         if (files[i+2] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        files[i+3] = aligned_alloc(file_size,file_size*file_size*sizeof(uint32_t));
+        files[i+3] = aligned_alloc(file_size,file_byte_size);
         if (files[i+3] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
     }
 
@@ -73,7 +75,7 @@ int main(int argc, char **argv) {
         files[0][i+3] = i+3;
     }
     
-    uint32_t *encrypted_file = malloc(sizeof(uint32_t) * file_size * file_size);
+    uint32_t *encrypted_file = malloc(file_byte_size);
     if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
     
     struct sockaddr_storage their_addr; 
@@ -122,10 +124,11 @@ int main(int argc, char **argv) {
     uint32_t *key = NULL;
     int numbytes;
     uint32_t key_payload_length;
+    uint32_t recv_done;
 
     // response variables
     uint8_t code = 0;
-    uint32_t sz = htonl(file_size*file_size * sizeof(uint32_t));
+    uint32_t sz = htonl(file_byte_size);
 
     bool first_iter = true;
 
@@ -150,29 +153,25 @@ int main(int argc, char **argv) {
                         fprintf(stderr, "Error while receiving header from client\n errno: %d\n", errno); 
                     findex = ntohl(findex); key_size = ntohl(key_size);
 
-                    if (file_size % key_size != 0) fprintf(stderr, "Invalid key format\n");
-
                     /* Receiving request Key */
-                    if (key == NULL) { // malloc only once for keys of same sizes
+                    if (old_key_size != key_size){ // malloc only once for keys of same sizes
+                        if (file_size % key_size != 0) fprintf(stderr, "Invalid key format\n");
                         key_payload_length = key_size*key_size*sizeof(uint32_t);
-                        key = malloc(key_payload_length);
-                    } else if (old_key_size != key_size){
-                        key_payload_length = key_size*key_size*sizeof(uint32_t);
-                        free(key);
+                        if (key != NULL) free(key);
                         key = malloc(key_payload_length);
                     }
-                    uint32_t done = 0;
-                    while (done < key_payload_length) {
-                        if ((numbytes = recv(client_fd, key, key_payload_length - done, 0)) == -1)
+                    recv_done = 0;
+                    while (recv_done < key_payload_length) {
+                        if ((numbytes = recv(client_fd, key, key_payload_length - recv_done, 0)) == -1)
                             fprintf(stderr, "Error while receiving payload from client\n errno: %d\n", errno);
-                        done += numbytes;
+                        recv_done += numbytes;
                     }
 
                     /* Sending response */
                     encrypt_file(encrypted_file, files[findex], file_size, key, key_size);
                     if (send(client_fd, &code, 1, 0) == -1) fprintf(stderr, "send failed, response error_code\n errno: %d\n", errno);
                     if (send(client_fd, &sz, 4, 0) == -1) fprintf(stderr, "send failed, response size\n errno: %d\n", errno);
-                    if (send(client_fd, encrypted_file, file_size*file_size * sizeof(uint32_t), 0) == -1) fprintf(stderr, "send failed, response encrypted_file\n errno: %d\n", errno);
+                    if (send(client_fd, encrypted_file, file_byte_size, 0) == -1) fprintf(stderr, "send failed, response encrypted_file\n errno: %d\n", errno);
                     close(client_fd);
                 }
                 n_events = poll(fds, 1, 0);
