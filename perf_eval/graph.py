@@ -175,12 +175,12 @@ def barplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc=
     plt.savefig(PLOTS_DIRECTORY+"/"+out_filename)
     plt.close()
 
-def boxplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc='upper left'):
+def boxplot_single(xs, ys, ylabel, title, out_filename):
     fig, ax = plt.subplots()
     fig.set_figheight(9)
     fig.set_figwidth(8)
     x = np.arange(len(xs))
-    ax.boxplot([ys])
+    ax.boxplot(ys)
     ax.set_ylabel(ylabel)
     ax.set_ylim(bottom=0)
     ax.set_xticks(x, labels=xs, rotation=70)
@@ -197,6 +197,10 @@ def boxplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc=
 if __name__ == "__main__":
     if not os.path.exists(PLOTS_DIRECTORY):
         os.makedirs(PLOTS_DIRECTORY)
+    if not os.path.exists(PLOTS_DIRECTORY+"/barplots"):
+        os.makedirs(PLOTS_DIRECTORY+"/barplots")
+    if not os.path.exists(PLOTS_DIRECTORY+"/boxplots"):
+        os.makedirs(PLOTS_DIRECTORY+"/boxplots")
 
 
     ############################
@@ -224,7 +228,7 @@ if __name__ == "__main__":
     labels_128 = []
     for filename in FILENAMES_RTIME:
         df = pd.read_csv(filename)
-        print(df.describe())
+        print("\n\n", filename, "\n", df.describe())
         if (df.iloc[0]["ksize"] == 128):
             labels_128.append("Optim="+OPTI_NAMES[int(df.iloc[0]["opti"])]+ ", " + "ksize="+str(df.iloc[0]["ksize"]))
             data_128.append(np.array(df["rtime"].tolist()) / 1000)
@@ -241,81 +245,96 @@ if __name__ == "__main__":
     df = pd.read_csv(FILENAME_PERF)
 
     # Percentage of misses
+    print("\n\n\n##### Percentage #####")
     labels = ('cache-misses', 'dTLB-load-misses', 'dTLB-store-misses', 'L1-dcache-load-misses', 'LLC-load-misses', 'LLC-store-misses') #'iTLB-load-misses'
     xs = []
     ys = [[] for i in range(len(labels))]
     stds = [[] for i in range(len(labels))]
+    values = [[] for i in range(len(labels))]
     for ksize in KSIZES:    
         for opti in OPTIS:
+            print("\nMean percentage of misses for ksize="+str(ksize)+" , opti="+OPTI_NAMES[opti]+" : ")
             xs.append("Optim="+OPTI_NAMES[opti]+ ", " + "ksize="+str(ksize))
             for i, label in enumerate(labels):
                 load_name = label[:-7] + "s" if label != "cache-misses" else "cache-references"
                 loads = np.array(df[load_name][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
                 misses = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
                 percentage = (np.array(misses) / loads) * 100
+                print((label+":").ljust(30) + str(np.mean(percentage)).ljust(30) + "std: "+str(np.std(percentage)))
+                values[i].append(percentage)
                 ys[i].append(np.mean(percentage))
                 stds[i].append(np.std(percentage)) 
     ylabel = "Misses (%)"
     # single plot
     for i, label in enumerate(labels):
         title="Mean percentage of "+label+" for every optimization levels and key sizes"
-        out_filename = "cache_misses_percentage_"+label+".pdf"
-        boxplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
+        out_filename = "barplots/cache_misses_percentage_"+label+".pdf"
+        barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
+        title="Percentage of "+label+" for every optimization levels and key sizes"
+        out_filename = "boxplots/cache_misses_percentage_"+label+".pdf"
+        boxplot_single(xs, values[i], ylabel, title, out_filename)
     # multi plot
     title = "Mean percentage of misses for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_percentage.pdf", "upper right")
 
 
     # Total number of misses
+    print("\n\n\n##### Misses #####")
     labels = ('cache-misses', 'dTLB-load-misses', 'dTLB-store-misses', 'iTLB-load-misses', 'L1-dcache-load-misses', 'LLC-load-misses', 'LLC-store-misses')
     xs = []
     ys = [[] for i in range(len(labels))]
     stds = [[] for i in range(len(labels))]
+    values = [[] for i in range(len(labels))]
     for ksize in KSIZES:    
         for opti in OPTIS:
+            print("\nMean number of misses for ksize="+str(ksize)+" , opti="+OPTI_NAMES[opti]+" : ")
             xs.append("Optim="+OPTI_NAMES[opti]+ ", " + "ksize="+str(ksize))
             for i, label in enumerate(labels):
                 misses = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+                print((label+":").ljust(30) + str(np.mean(misses)).ljust(30) + "std: "+str(np.std(misses)))
+                values[i].append(misses)
                 ys[i].append(np.mean(misses))
                 stds[i].append(np.std(misses))
     ylabel = "Number of misses"
     # single plot
     for i, label in enumerate(labels):
         title="Mean number of "+label+" for every optimization levels and key sizes"
-        out_filename = "cache_misses_total_number_"+label+".pdf"
-        boxplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
+        out_filename = "barplots/cache_misses_total_number_"+label+".pdf"
+        barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
+        title="Number of "+label+" for every optimization levels and key sizes"
+        out_filename = "boxplots/cache_misses_total_number_"+label+".pdf"
+        boxplot_single(xs, values[i], ylabel, title, out_filename)
     # multi plot
     title = "Mean number of misses for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf")
 
 
     # Total number of loads
+    print("\n\n\n##### Loads #####")
     labels = ('cache-references','dTLB-loads','dTLB-stores','iTLB-loads','L1-dcache-loads','LLC-loads','LLC-stores')
     xs = []
     ys = [[] for i in range(len(labels))]
     stds = [[] for i in range(len(labels))]
+    values = [[] for i in range(len(labels))]
     for ksize in KSIZES:    
         for opti in OPTIS:
+            print("\nMean number of loads for ksize="+str(ksize)+" , opti="+OPTI_NAMES[opti]+" : ")
             xs.append("Optim="+OPTI_NAMES[opti]+ ", " + "ksize="+str(ksize))
             for i, label in enumerate(labels):
                 loads = np.array(df[label][(df["opti"] == opti) & (df["ksize"] == ksize)].tolist())
+                print((label+":").ljust(30) + str(np.mean(loads)).ljust(30) + "std: "+str(np.std(loads)))
+                values[i].append(loads)
                 ys[i].append(np.mean(loads))
                 stds[i].append(np.std(loads))
     ylabel = "Number of loads"
     # single plot
     for i, label in enumerate(labels):
         title="Mean number of "+label+" for every optimization levels and key sizes"
-        out_filename = "cache_loads_total_number_"+label+".pdf"
-        boxplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
+        out_filename = "barplots/cache_loads_total_number_"+label+".pdf"
+        barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
+        title="Number of "+label+" for every optimization levels and key sizes"
+        out_filename = "boxplots/cache_loads_total_number_"+label+".pdf"
+        boxplot_single(xs, values[i], ylabel, title, out_filename)
     # multi plot
     title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
     barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf")
-
-
-        
-    
-    
-
-
-                
-    
