@@ -56,13 +56,13 @@ int main(int argc, char **argv) {
     files = malloc(sizeof(void*) * 1000); 
     if (files == NULL) fprintf(stderr, "Error malloc: files\n");
     for (uint32_t i = 0 ; i < 1000; i+=4) {
-        files[i] = malloc(file_size*file_size*sizeof(uint32_t));
+        files[i] = aligned_alloc(file_size,file_size*file_size*sizeof(uint32_t));
         if (files[i] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        files[i+1] = malloc(file_size*file_size*sizeof(uint32_t));
+        files[i+1] = aligned_alloc(file_size,file_size*file_size*sizeof(uint32_t));
         if (files[i+1] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        files[i+2] = malloc(file_size*file_size*sizeof(uint32_t));
+        files[i+2] = aligned_alloc(file_size,file_size*file_size*sizeof(uint32_t));
         if (files[i+2] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        files[i+3] = malloc(file_size*file_size*sizeof(uint32_t));
+        files[i+3] = aligned_alloc(file_size,file_size*file_size*sizeof(uint32_t));
         if (files[i+3] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
     }
 
