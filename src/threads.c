@@ -145,8 +145,8 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
                 for(uint32_t j = 0; j < file_size; j+=4) {
                     encrypted_file[index_encry + j] += r * file[index_file+j];
                     encrypted_file[index_encry + j+1] += r * file[index_file+j+1];
+                    encrypted_file[index_encry + j+2] += r * file[index_file+j+2];
                     encrypted_file[index_encry + j+3] += r * file[index_file+j+3];
-                    encrypted_file[index_encry + j+4] += r * file[index_file+j+4];
                 }
             }
         }
