@@ -247,7 +247,7 @@ if __name__ == "__main__":
     df = pd.read_csv(FILENAME_UNROLL)
     unrolls = (2, 4, 8, 16, 32)
     xs = ("ksize=128, opti=Both, Unroll="+unroll for unroll in unrolls)
-    ys = [dfval.tolist() for unroll in unrolls for dfval in df['rtt'][df["unroll"] == unroll] ]
+    ys = [df['rtt'][df["unroll"] == unroll].tolist() for unroll in unrolls ]
     title = "Response time by the unrolling factor"
     ylabel = "Response time (ms)"
     boxplot_single(xs, ys, ylabel, title, "unroll_measurements.pdf")
