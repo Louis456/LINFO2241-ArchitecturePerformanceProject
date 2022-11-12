@@ -54,7 +54,7 @@ if __name__ == "__main__":
     make_clean_make_all()
 
     filename_perf = "data/perf_measurements.csv"
-    init_file(filename_perf, "fsize,ksize,request_rate,thread,opti," + ','.join(PERF_ARGS) + "\n")
+    init_file(filename_perf, "fsize,ksize,request_rate,thread,opti,iteration," + ','.join(PERF_ARGS) + "\n")
 
     for ksize in KSIZES:
         print("\n=============\nKey size:", ksize)
@@ -80,11 +80,11 @@ if __name__ == "__main__":
                 # Save response times to file
                 with open(filename_rtime, 'a') as file:
                     for rt in response_times:
-                        file.write("{0},{1},{2},{3},{4},{5}\n".format(FSIZE, ksize, REQUEST_RATE, THREAD, opti, rt, it))
+                        file.write("{0},{1},{2},{3},{4},{5},{6}\n".format(FSIZE, ksize, REQUEST_RATE, THREAD, opti, rt, it))
                 
                 # Save perf measurements to file
                 with open(filename_perf, 'a') as file:
-                    file.write("{0},{1},{2},{3},{4}".format(FSIZE, ksize, REQUEST_RATE, THREAD, opti))
+                    file.write("{0},{1},{2},{3},{4},{5}".format(FSIZE, ksize, REQUEST_RATE, THREAD, opti, it))
                     for perf_arg in PERF_ARGS:
                         file.write(",{0}".format(measurements[perf_arg]))
                     file.write("\n")
