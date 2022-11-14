@@ -22,6 +22,7 @@ PARENT_PATH = Path().resolve().parent
 
 def make_clean_make_all():
     subprocess.run(['make', 'clean'], cwd=PARENT_PATH)
+    subprocess.run(['make', 'client'], cwd=PARENT_PATH)
     subprocess.run(['make', 'server-optim'], cwd=PARENT_PATH)
 
 def init_file(filename: str, headers: str):
