@@ -26,7 +26,7 @@ const bool showDebug = false;
 
 int main(int argc, char **argv) {
 
-    printf("unroll 4\n");
+    printf("unroll 2\n");
     srandom(time(NULL));
 
     char *server_ip_port = NULL;
