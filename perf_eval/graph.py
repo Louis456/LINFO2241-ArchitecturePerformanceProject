@@ -14,97 +14,6 @@ FILENAMES_RTIME = ["data/rtime_key_"+str(ksize)+"_opti_"+str(opti)+".csv" for ks
 PLOTS_DIRECTORY = "plots_phase2"
 OPTI_NAMES = ("None", "Line by line", "Unroll", "Both")
 
-def barplot2k(xs: list, ys: list, stds: list, labels: list, x_axis_name: str, y_axis_name: str, title: str, filename: str):
-    fig, ax = plt.subplots(figsize=(10, 7))
-    width = 0.2
-    bars = []
-    x = np.arange(len(xs))
-    bars.append(ax.bar(x - width/2, ys[0], width, label=labels[0]))
-    bars.append(ax.bar(x + width/2, ys[1], width, label=labels[1]))
-    ax.errorbar(x - width/2, ys[0], yerr=stds[0], fmt="|", color="0")
-    ax.errorbar(x + width/2, ys[1], yerr=stds[1], fmt="|", color="0")
-    
-
-    ax.set_xlabel(x_axis_name)
-    ax.set_ylabel(y_axis_name)
-    ax.legend(loc='upper left')
-    
-    ax.set_title(title)
-    ax.set_xticks(x, labels=xs)
-    ax.set_axisbelow(True)
-    plt.xticks(rotation=80)
-    plt.grid(axis='y', linestyle='dashed')
-    fig.tight_layout()
-    plt.savefig(filename+".pdf")
-    plt.close()
-
-def barplot_single_factor(xs: list, ys: list, stds: list, label: str, x_axis_name: str, y_axis_name: str, title: str, filename: str):
-    fig  = plt.figure()
-    plt.bar(xs, ys, label=label)
-    plt.errorbar(xs, ys, yerr=stds, fmt="|", color="0")
-    plt.xlabel(x_axis_name)
-    plt.ylabel(y_axis_name)
-    plt.title(title)
-    plt.legend(loc="lower right")
-    plt.grid(axis='y', linestyle='dashed')
-    plt.rc('axes', axisbelow=True)
-    plt.savefig(filename+".pdf")
-    plt.close()
-
-def plot_single_factor(xs: list, ys: list, stds: list, label: str, x_axis_name: str, y_axis_name: str, title: str, filename: str):
-    fig  = plt.figure()
-    plt.plot(xs, ys, label=label)
-    plt.errorbar(xs, ys, yerr=stds, fmt="|", color="0")
-    plt.xlabel(x_axis_name)
-    plt.ylabel(y_axis_name)
-    plt.ylim(ymin=0)
-    plt.xlim(xmin=0)
-    plt.title(title)
-    plt.legend(loc="lower right")
-
-    plt.grid(axis='y', linestyle='dashed')
-    plt.rc('axes', axisbelow=True)
-    plt.savefig(filename+".pdf")
-    plt.close()
-
-
-def get_values_for_2K(df, xs, ys, stds, response_variable):
-    for fsize in df["fsize"].unique():
-        for ksize in df['ksize'].unique():
-            for request_rate in df['request_rate'].unique():
-
-                xs.append("fsize="+str(fsize)+", ksize="+str(ksize)+", req_rate="+str(request_rate))
-
-                for thread in df['thread'].unique():
-                    tmp_df = df.loc[(df["fsize"] == fsize) & (df["ksize"] == ksize) & (df["request_rate"] == request_rate) & (df["thread"] == thread) & df["std"]]
-                    
-                    mean = tmp_df[response_variable].mean()
-                    std = tmp_df["std"].mean()
-                    
-
-                    if (thread == 2):                
-                        ys[0].append(mean)
-                        stds[0].append(std)
-                    elif (thread == 4):
-                        ys[1].append(mean)
-                        stds[1].append(std)
-
-def get_values_single_factor_throughput(df, ys, stds, varying_factor, fixed_factors):
-    for val in df[varying_factor].unique():
-        tmp_df = df.loc[(df[fixed_factors[0][0]] == fixed_factors[0][1]) & (df[fixed_factors[1][0]] == fixed_factors[1][1]) & (df[fixed_factors[2][0]] == fixed_factors[2][1]) & (df[varying_factor] == val)]
-        mean = tmp_df["throughput"].mean()
-        std = tmp_df["throughput"].std()
-        ys.append(mean)
-        stds.append(std)
-
-def get_values_single_factor_time(df, ys, stds, varying_factor, fixed_factors):
-    for val in df[varying_factor].unique():
-        tmp_df = df.loc[(df[fixed_factors[0][0]] == fixed_factors[0][1]) & (df[fixed_factors[1][0]] == fixed_factors[1][1]) & (df[fixed_factors[2][0]] == fixed_factors[2][1]) & (df[varying_factor] == val) & df["std"]]
-        mean = tmp_df["response_time"].mean()
-        std = tmp_df["std"].mean()
-        ys.append(mean)
-        stds.append(std)
-
 
 def boxplot_rtime(data_8, data_128, labels_8, labels_128, out_filename, type="split"):
     if type == "split":
@@ -215,7 +124,7 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(figsize=(3, 6))
     sn.heatmap(corr_rtime[["rtime"]], annot=True)
     plt.margins(5)
-    plt.savefig("plots_phase2/rtime_correlation.pdf")
+    plt.savefig("plots_phase2/rtime_correlation.png")
     plt.close()
 
 
@@ -235,8 +144,8 @@ if __name__ == "__main__":
         else:
             labels_8.append("Optim="+OPTI_NAMES[int(df.iloc[0]["opti"])]+ ", " + "ksize="+str(df.iloc[0]["ksize"]))
             data_8.append(np.array(df["rtime"].tolist()) / 1000)
-    boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_split.pdf")
-    boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_single.pdf", "single")
+    boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_split.png")
+    boxplot_rtime(data_8, data_128, labels_8, labels_128, "2k_rtime_plot_single.png", "single")
 
 
     ###########################
@@ -248,7 +157,7 @@ if __name__ == "__main__":
     ys = [np.array(df['rtt'][df["unroll"] == unroll].tolist())/1000 for unroll in unrolls ]
     title = "Response time by the unrolling factor"
     ylabel = "Response time (ms)"
-    boxplot_single(xs, ys, ylabel, title, "unroll_measurements.pdf")
+    boxplot_single(xs, ys, ylabel, title, "unroll_measurements.png")
 
 
 
@@ -282,14 +191,14 @@ if __name__ == "__main__":
     # single plot
     for i, label in enumerate(labels):
         title="Mean percentage of "+label+" for every optimization levels and key sizes"
-        out_filename = "barplots/cache_misses_percentage_"+label+".pdf"
+        out_filename = "barplots/cache_misses_percentage_"+label+".png"
         barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
         title="Percentage of "+label+" for every optimization levels and key sizes"
-        out_filename = "boxplots/cache_misses_percentage_"+label+".pdf"
+        out_filename = "boxplots/cache_misses_percentage_"+label+".png"
         boxplot_single(xs, values[i], ylabel, title, out_filename)
     # multi plot
     title = "Mean percentage of misses for Perf metrics for every optimization levels and key sizes"
-    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_percentage.pdf", "upper right")
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_percentage.png", "upper right")
 
 
     # Total number of misses
@@ -313,14 +222,14 @@ if __name__ == "__main__":
     # single plot
     for i, label in enumerate(labels):
         title="Mean number of "+label+" for every optimization levels and key sizes"
-        out_filename = "barplots/cache_misses_total_number_"+label+".pdf"
+        out_filename = "barplots/cache_misses_total_number_"+label+".png"
         barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
         title="Number of "+label+" for every optimization levels and key sizes"
-        out_filename = "boxplots/cache_misses_total_number_"+label+".pdf"
+        out_filename = "boxplots/cache_misses_total_number_"+label+".png"
         boxplot_single(xs, values[i], ylabel, title, out_filename)
     # multi plot
     title = "Mean number of misses for Perf metrics for every optimization levels and key sizes"
-    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.pdf")
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_misses_total_number.png")
 
 
     # Total number of loads
@@ -344,13 +253,13 @@ if __name__ == "__main__":
     # single plot
     for i, label in enumerate(labels):
         title="Mean number of "+label+" for every optimization levels and key sizes"
-        out_filename = "barplots/cache_loads_total_number_"+label+".pdf"
+        out_filename = "barplots/cache_loads_total_number_"+label+".png"
         barplot_single(xs, ys[i], stds[i], label, ylabel, title, out_filename)
         title="Number of "+label+" for every optimization levels and key sizes"
-        out_filename = "boxplots/cache_loads_total_number_"+label+".pdf"
+        out_filename = "boxplots/cache_loads_total_number_"+label+".png"
         boxplot_single(xs, values[i], ylabel, title, out_filename)
     # multi plot
     title = "Mean number of loads for Perf metrics for every optimization levels and key sizes"
-    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.pdf")
+    barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, "cache_loads_total_number.png")
 
 
