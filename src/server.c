@@ -57,16 +57,29 @@ int main(int argc, char **argv) {
     file_byte_size = file_size * file_size * sizeof(uint32_t);
     files = malloc(sizeof(void*) * 1000); 
     if (files == NULL) fprintf(stderr, "Error malloc: files\n");
-    for (uint32_t i = 0 ; i < 1000; i+=4) {
-        files[i] = malloc(file_byte_size);
-        if (files[i] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        files[i+1] = malloc(file_byte_size);
-        if (files[i+1] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        files[i+2] = malloc(file_byte_size);
-        if (files[i+2] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        files[i+3] = malloc(file_byte_size);
-        if (files[i+3] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-    }
+    #if OPTIM == 3
+        for (uint32_t i = 0 ; i < 1000; i+=4) {
+            files[i] = aligned_alloc(file_size,file_byte_size);
+            if (files[i] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+            files[i+1] = aligned_alloc(file_size,file_byte_size);
+            if (files[i+1] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+            files[i+2] = aligned_alloc(file_size,file_byte_size);
+            if (files[i+2] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+            files[i+3] = aligned_alloc(file_size,file_byte_size);
+            if (files[i+3] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+        }
+    #else
+        for (uint32_t i = 0 ; i < 1000; i+=4) {
+            files[i] = malloc(file_byte_size);
+            if (files[i] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+            files[i+1] = malloc(file_byte_size);
+            if (files[i+1] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+            files[i+2] = malloc(file_byte_size);
+            if (files[i+2] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+            files[i+3] = malloc(file_byte_size);
+            if (files[i+3] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+        }
+    #endif
 
     for (uint32_t i = 0; i < file_size * file_size; i+=4) {
         files[0][i] = i;
@@ -75,8 +88,13 @@ int main(int argc, char **argv) {
         files[0][i+3] = i+3;
     }
     
-    uint32_t *encrypted_file = malloc(file_byte_size);
-    if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
+    #if OPTIM == 3
+        uint32_t *encrypted_file = aligned_alloc(file_size,file_byte_size);
+        if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
+    #else
+        uint32_t *encrypted_file = malloc(file_byte_size);
+        if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
+    #endif
     
     struct sockaddr_storage their_addr; 
     socklen_t addr_size;
