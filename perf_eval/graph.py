@@ -70,8 +70,8 @@ def barplot_multiple_bars(xs, ys, stds, labels, ylabel, title, out_filename, leg
 
 def barplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc='upper left'):
     fig  = plt.figure()
-    fig.set_figheight(10)
-    fig.set_figwidth(9)
+    fig.set_figheight(11)
+    fig.set_figwidth(10)
     x = np.arange(len(xs))
     plt.bar(x, ys, label=label, yerr=stds, capsize=4)
     plt.ylabel(ylabel)
@@ -88,8 +88,8 @@ def barplot_single(xs, ys, stds, label, ylabel, title, out_filename, legend_loc=
 
 def boxplot_single(xs, ys, ylabel, title, out_filename):
     fig, ax = plt.subplots()
-    fig.set_figheight(10)
-    fig.set_figwidth(9)
+    fig.set_figheight(11)
+    fig.set_figwidth(10)
     ax.boxplot(ys, labels=xs)
     ax.set_ylabel(ylabel)
     ax.set_ylim(bottom=0)
