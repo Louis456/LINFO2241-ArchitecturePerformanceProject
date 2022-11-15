@@ -50,7 +50,7 @@ void* start_client_thread(void* args) {
     get_current_clock(&end_at);
     struct timeval diff_time;
     timersub(&end_at, &start_at, &diff_time);
-    printf("response_time=%"PRIu64"\n", get_us(&diff_time));
+    //printf("response_time=%"PRIu64"\n", get_us(&diff_time));
 
     close(sockfd);
     free(key);
