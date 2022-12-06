@@ -16,6 +16,8 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <arpa/inet.h>
+#include <immintrin.h>
+#include <x86intrin.h>
 
 #include "utils.h"
 
@@ -37,7 +39,7 @@ typedef struct {
  * @return: fills encrypted_file the result of the matrix multiplications of each sub-squareconcatenated in a single array
  * 
 */
-void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size);
+void encrypt_file(float *encrypted_file, float *file, uint32_t file_size, float *key, uint32_t key_size);
 
 /* Funtion called by client main to start a thread which will establish a connection with the server, generate a key, send a request and wait for a response 
  * @pre: key size and server information

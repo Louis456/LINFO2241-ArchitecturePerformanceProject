@@ -10,7 +10,7 @@ void* start_client_thread(void* args) {
         fprintf(stderr, "Error while connecting to server\n errno: %d\n", errno);
     }
     
-    uint32_t *key = malloc(sizeof(uint32_t) * arguments->key_payload_length);   
+    float *key = malloc(sizeof(float) * arguments->key_payload_length);   
     if (key == NULL) fprintf(stderr, "Error malloc: key payload\n");
 
     // Send request
@@ -18,7 +18,7 @@ void* start_client_thread(void* args) {
     uint32_t key_size = htonl(arguments->key_size);
     if (send(sockfd, &file_index, 4, 0) == -1) fprintf(stderr, "send failed, request fileindex\n errno: %d\n", errno);
     if (send(sockfd, &key_size, 4, 0) == -1) fprintf(stderr, "send failed, request key_size\n errno: %d\n", errno);
-    if (send(sockfd, key, sizeof(uint32_t) * arguments->key_payload_length, 0) == -1) fprintf(stderr, "send failed, request key\n errno: %d\n", errno);
+    if (send(sockfd, key, sizeof(float) * arguments->key_payload_length, 0) == -1) fprintf(stderr, "send failed, request key\n errno: %d\n", errno);
 
     // Start timer
     struct timeval start_at;
@@ -60,7 +60,7 @@ void* start_client_thread(void* args) {
 
 
 
-void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, uint32_t *key, uint32_t key_size) {
+void encrypt_file(float *encrypted_file, float *file, uint32_t file_size, float *key, uint32_t key_size) {
     #if OPTIM == 0 
         uint32_t file_div_key = file_size / key_size;
         uint32_t l, m, i, j, k, index_encry;
@@ -157,7 +157,7 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
                 }
             }
         }
-    #else
+    #elif OPTIM == 3
         uint32_t i, j, k, r, key_block, index_encry, index_file;
         index_encry = 0;
         uint8_t exp_key = log2(key_size);
@@ -317,6 +317,34 @@ void encrypt_file(uint32_t *encrypted_file, uint32_t *file, uint32_t file_size, 
                 }
             }
             index_encry += file_size;
+        }
+    #else
+        uint32_t r, i, j, k, index_file, key_block;
+        for (i = 0; i < file_size; i++) {
+            key_block = (i % key_size) * key_size;
+            index_file = (i-(i%key_size))*file_size;
+            for(j = 0; j < file_size; j+=8) {
+                __m256 avx_key = _mm256_broadcast_ps(key[key_block]);
+                __m256 avx_file = _mm256_load_ps(file+index_file+j);
+                __m256 key_times_file = _mm256_mul_ps(avx_key, avx_file);
+                _mm256_store_ps(encrypted_file+(i*file_size)+j, key_times_file);
+
+                //encrypted_file[i*file_size + j] = key[key_block] * file[index_file + j];
+            }
+            for (k = 1; k < key_size; k++) {
+                r = key[key_block + k];
+                index_file = (i-(i%key_size)+k)*file_size;
+                for(j = 0; j < file_size; j+=8) {
+                    __m256 avx_r = _mm256_broadcast_ps(r);
+                    __m256 avx_file = _mm256_load_ps(file+index_file+j);
+                    __m256 avx_enc_file = _mm256_load_ps(file+(i*file_size)+j);
+                    __m256 r_times_file = _mm256_mul_ps(avx_r, avx_file);
+                    __m256 enc_file_add = _mm256_add_ps(r_times_file, avx_enc_file);
+                    _mm256_store_ps(encrypted_file+(i*file_size)+j, enc_file_add);
+
+                    //encrypted_file[i*file_size + j] += r * file[index_file+j];
+                }
+            }
         }
     #endif
 }

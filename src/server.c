@@ -19,7 +19,7 @@
 
 uint32_t file_size = 0;
 uint32_t file_byte_size = 0;
-uint32_t **files;
+float **files;
 
 int main(int argc, char **argv) {
     
@@ -54,32 +54,21 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    file_byte_size = file_size * file_size * sizeof(uint32_t);
+    file_byte_size = file_size * file_size * sizeof(float);
     files = malloc(sizeof(void*) * 1000); 
     if (files == NULL) fprintf(stderr, "Error malloc: files\n");
-    #if OPTIM == 3
-        for (uint32_t i = 0 ; i < 1000; i+=4) {
-            files[i] = aligned_alloc(file_size,file_byte_size);
-            if (files[i] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-            files[i+1] = aligned_alloc(file_size,file_byte_size);
-            if (files[i+1] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-            files[i+2] = aligned_alloc(file_size,file_byte_size);
-            if (files[i+2] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-            files[i+3] = aligned_alloc(file_size,file_byte_size);
-            if (files[i+3] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        }
-    #else
-        for (uint32_t i = 0 ; i < 1000; i+=4) {
-            files[i] = malloc(file_byte_size);
-            if (files[i] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-            files[i+1] = malloc(file_byte_size);
-            if (files[i+1] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-            files[i+2] = malloc(file_byte_size);
-            if (files[i+2] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-            files[i+3] = malloc(file_byte_size);
-            if (files[i+3] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
-        }
-    #endif
+    
+    for (uint32_t i = 0 ; i < 1000; i+=4) {
+        files[i] = aligned_alloc(file_size,file_byte_size);
+        if (files[i] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+        files[i+1] = aligned_alloc(file_size,file_byte_size);
+        if (files[i+1] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+        files[i+2] = aligned_alloc(file_size,file_byte_size);
+        if (files[i+2] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+        files[i+3] = aligned_alloc(file_size,file_byte_size);
+        if (files[i+3] == NULL) fprintf(stderr, "Error malloc: files[i]\n");
+    }
+    
 
     for (uint32_t i = 0; i < file_size * file_size; i+=4) {
         files[0][i] = i;
@@ -99,7 +88,7 @@ int main(int argc, char **argv) {
     struct sockaddr_storage their_addr; 
     socklen_t addr_size;
     int optval = 1;
-    int max_connection_in_queue = 128;
+    int max_connection_in_queue = 1024;
 
     //char s[INET6_ADDRSTRLEN];
 
@@ -139,7 +128,7 @@ int main(int argc, char **argv) {
     uint32_t key_size = 0;
     uint32_t old_key_size = 0;
     uint32_t findex = 0;
-    uint32_t *key = NULL;
+    float *key = NULL;
     int numbytes;
     uint32_t key_payload_length = 0;
     uint32_t recv_done;
@@ -151,7 +140,7 @@ int main(int argc, char **argv) {
     bool first_iter = true;
 
     while(true) {
-        n_events = poll(fds, 1, 2000);
+        n_events = poll(fds, 1, -1);
         if (n_events < 0) fprintf(stderr, "Error while using poll(), errno: %d", errno);
         else if (n_events > 0){
             first_iter = false;
