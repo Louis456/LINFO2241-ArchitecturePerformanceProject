@@ -10,7 +10,7 @@ void* start_client_thread(void* args) {
         fprintf(stderr, "Error while connecting to server\n errno: %d\n", errno);
     }
     
-    float *key = malloc(sizeof(float) * arguments->key_payload_length);   
+    float *key = aligned_alloc(arguments->key_size,sizeof(float) * arguments->key_payload_length);   
     if (key == NULL) fprintf(stderr, "Error malloc: key payload\n");
 
     // Send request
@@ -78,7 +78,8 @@ void encrypt_file(float *encrypted_file, float *file, uint32_t file_size, float 
             }
         }
     #elif OPTIM == 1
-        uint32_t r, i, j, k, index_file, key_block;
+        uint32_t i, j, k, index_file, key_block;
+        float r;
         for (i = 0; i < file_size; i++) {
             key_block = (i % key_size) * key_size;
             index_file = (i-(i%key_size))*file_size;
@@ -158,191 +159,109 @@ void encrypt_file(float *encrypted_file, float *file, uint32_t file_size, float 
             }
         }
     #elif OPTIM == 3
-        uint32_t i, j, k, r, key_block, index_encry, index_file;
-        index_encry = 0;
-        uint8_t exp_key = log2(key_size);
-        uint8_t exp_file = log2(file_size);
-        uint8_t exp_keyblock;
-        uint8_t exp_r;
+        uint32_t i, j, k, index_file, key_block;
+        float r;
         for (i = 0; i < file_size; i++) {
-            key_block = (i % key_size) << exp_key;
-            index_file = (i-(i%key_size)) << exp_file;
-            if ((key_block != 0) && ((key_block & (key_block - 1)) == 0)) { // is power of 2, then bitshift
-                exp_keyblock = log2(key_block); 
-                for(j = 0; j < file_size; j+=32) {
-                    encrypted_file[index_encry + j] = file[index_file + j] << exp_keyblock;
-                    encrypted_file[index_encry + j+1] = file[index_file + j+1] << exp_keyblock;
-                    encrypted_file[index_encry + j+2] = file[index_file + j+2] << exp_keyblock;
-                    encrypted_file[index_encry + j+3] = file[index_file + j+3] << exp_keyblock;
-                    encrypted_file[index_encry + j+4] = file[index_file + j+4] << exp_keyblock;
-                    encrypted_file[index_encry + j+5] = file[index_file + j+5] << exp_keyblock;
-                    encrypted_file[index_encry + j+6] = file[index_file + j+6] << exp_keyblock;
-                    encrypted_file[index_encry + j+7] = file[index_file + j+7] << exp_keyblock;
-                    encrypted_file[index_encry + j+8] = file[index_file + j+8] << exp_keyblock;
-                    encrypted_file[index_encry + j+9] = file[index_file + j+9] << exp_keyblock;
-                    encrypted_file[index_encry + j+10] = file[index_file + j+10] << exp_keyblock;
-                    encrypted_file[index_encry + j+11] = file[index_file + j+11] << exp_keyblock;
-                    encrypted_file[index_encry + j+12] = file[index_file + j+12] << exp_keyblock;
-                    encrypted_file[index_encry + j+13] = file[index_file + j+13] << exp_keyblock;
-                    encrypted_file[index_encry + j+14] = file[index_file + j+14] << exp_keyblock;
-                    encrypted_file[index_encry + j+15] = file[index_file + j+15] << exp_keyblock;
-                    encrypted_file[index_encry + j+16] = file[index_file + j+16] << exp_keyblock;
-                    encrypted_file[index_encry + j+17] = file[index_file + j+17] << exp_keyblock;
-                    encrypted_file[index_encry + j+18] = file[index_file + j+18] << exp_keyblock;
-                    encrypted_file[index_encry + j+19] = file[index_file + j+19] << exp_keyblock;
-                    encrypted_file[index_encry + j+20] = file[index_file + j+20] << exp_keyblock;
-                    encrypted_file[index_encry + j+21] = file[index_file + j+21] << exp_keyblock;
-                    encrypted_file[index_encry + j+22] = file[index_file + j+22] << exp_keyblock;
-                    encrypted_file[index_encry + j+23] = file[index_file + j+23] << exp_keyblock;
-                    encrypted_file[index_encry + j+24] = file[index_file + j+24] << exp_keyblock;
-                    encrypted_file[index_encry + j+25] = file[index_file + j+25] << exp_keyblock;
-                    encrypted_file[index_encry + j+26] = file[index_file + j+26] << exp_keyblock;
-                    encrypted_file[index_encry + j+27] = file[index_file + j+27] << exp_keyblock;
-                    encrypted_file[index_encry + j+28] = file[index_file + j+28] << exp_keyblock;
-                    encrypted_file[index_encry + j+29] = file[index_file + j+29] << exp_keyblock;
-                    encrypted_file[index_encry + j+30] = file[index_file + j+30] << exp_keyblock;
-                    encrypted_file[index_encry + j+31] = file[index_file + j+31] << exp_keyblock;
-        
-                }
-            } else {
-                for(j = 0; j < file_size; j+=32) {
-                    encrypted_file[index_encry + j] = key[key_block] * file[index_file + j];
-                    encrypted_file[index_encry + j+1] = key[key_block] * file[index_file + j+1];
-                    encrypted_file[index_encry + j+2] = key[key_block] * file[index_file + j+2];
-                    encrypted_file[index_encry + j+3] = key[key_block] * file[index_file + j+3];
-                    encrypted_file[index_encry + j+4] = key[key_block] * file[index_file + j+4];
-                    encrypted_file[index_encry + j+5] = key[key_block] * file[index_file + j+5];
-                    encrypted_file[index_encry + j+6] = key[key_block] * file[index_file + j+6];
-                    encrypted_file[index_encry + j+7] = key[key_block] * file[index_file + j+7];
-                    encrypted_file[index_encry + j+8] = key[key_block] * file[index_file + j+8];
-                    encrypted_file[index_encry + j+9] = key[key_block] * file[index_file + j+9];
-                    encrypted_file[index_encry + j+10] = key[key_block] * file[index_file + j+10];
-                    encrypted_file[index_encry + j+11] = key[key_block] * file[index_file + j+11];
-                    encrypted_file[index_encry + j+12] = key[key_block] * file[index_file + j+12];
-                    encrypted_file[index_encry + j+13] = key[key_block] * file[index_file + j+13];
-                    encrypted_file[index_encry + j+14] = key[key_block] * file[index_file + j+14];
-                    encrypted_file[index_encry + j+15] = key[key_block] * file[index_file + j+15];
-                    encrypted_file[index_encry + j+16] = key[key_block] * file[index_file + j+16];
-                    encrypted_file[index_encry + j+17] = key[key_block] * file[index_file + j+17];
-                    encrypted_file[index_encry + j+18] = key[key_block] * file[index_file + j+18];
-                    encrypted_file[index_encry + j+19] = key[key_block] * file[index_file + j+19];
-                    encrypted_file[index_encry + j+20] = key[key_block] * file[index_file + j+20];
-                    encrypted_file[index_encry + j+21] = key[key_block] * file[index_file + j+21];
-                    encrypted_file[index_encry + j+22] = key[key_block] * file[index_file + j+22];
-                    encrypted_file[index_encry + j+23] = key[key_block] * file[index_file + j+23];
-                    encrypted_file[index_encry + j+24] = key[key_block] * file[index_file + j+24];
-                    encrypted_file[index_encry + j+25] = key[key_block] * file[index_file + j+25];
-                    encrypted_file[index_encry + j+26] = key[key_block] * file[index_file + j+26];
-                    encrypted_file[index_encry + j+27] = key[key_block] * file[index_file + j+27];
-                    encrypted_file[index_encry + j+28] = key[key_block] * file[index_file + j+28];
-                    encrypted_file[index_encry + j+29] = key[key_block] * file[index_file + j+29];
-                    encrypted_file[index_encry + j+30] = key[key_block] * file[index_file + j+30];
-                    encrypted_file[index_encry + j+31] = key[key_block] * file[index_file + j+31];
-                }
-            } 
+            key_block = (i % key_size) * key_size;
+            index_file = (i-(i%key_size))*file_size;
+            for(j = 0; j < file_size; j+=32) {
+                encrypted_file[i*file_size + j] = key[key_block] * file[index_file + j];
+                encrypted_file[i*file_size + j+1] = key[key_block] * file[index_file + j+1];
+                encrypted_file[i*file_size + j+2] = key[key_block] * file[index_file + j+2];
+                encrypted_file[i*file_size + j+3] = key[key_block] * file[index_file + j+3];
+                encrypted_file[i*file_size + j+4] = key[key_block] * file[index_file + j+4];
+                encrypted_file[i*file_size + j+5] = key[key_block] * file[index_file + j+5];
+                encrypted_file[i*file_size + j+6] = key[key_block] * file[index_file + j+6];
+                encrypted_file[i*file_size + j+7] = key[key_block] * file[index_file + j+7];
+                encrypted_file[i*file_size + j+8] = key[key_block] * file[index_file + j+8];
+                encrypted_file[i*file_size + j+9] = key[key_block] * file[index_file + j+9];
+                encrypted_file[i*file_size + j+10] = key[key_block] * file[index_file + j+10];
+                encrypted_file[i*file_size + j+11] = key[key_block] * file[index_file + j+11];
+                encrypted_file[i*file_size + j+12] = key[key_block] * file[index_file + j+12];
+                encrypted_file[i*file_size + j+13] = key[key_block] * file[index_file + j+13];
+                encrypted_file[i*file_size + j+14] = key[key_block] * file[index_file + j+14];
+                encrypted_file[i*file_size + j+15] = key[key_block] * file[index_file + j+15];
+                encrypted_file[i*file_size + j+16] = key[key_block] * file[index_file + j+16];
+                encrypted_file[i*file_size + j+17] = key[key_block] * file[index_file + j+17];
+                encrypted_file[i*file_size + j+18] = key[key_block] * file[index_file + j+18];
+                encrypted_file[i*file_size + j+19] = key[key_block] * file[index_file + j+19];
+                encrypted_file[i*file_size + j+20] = key[key_block] * file[index_file + j+20];
+                encrypted_file[i*file_size + j+21] = key[key_block] * file[index_file + j+21];
+                encrypted_file[i*file_size + j+22] = key[key_block] * file[index_file + j+22];
+                encrypted_file[i*file_size + j+23] = key[key_block] * file[index_file + j+23];
+                encrypted_file[i*file_size + j+24] = key[key_block] * file[index_file + j+24];
+                encrypted_file[i*file_size + j+25] = key[key_block] * file[index_file + j+25];
+                encrypted_file[i*file_size + j+26] = key[key_block] * file[index_file + j+26];
+                encrypted_file[i*file_size + j+27] = key[key_block] * file[index_file + j+27];
+                encrypted_file[i*file_size + j+28] = key[key_block] * file[index_file + j+28];
+                encrypted_file[i*file_size + j+29] = key[key_block] * file[index_file + j+29];
+                encrypted_file[i*file_size + j+30] = key[key_block] * file[index_file + j+30];
+                encrypted_file[i*file_size + j+31] = key[key_block] * file[index_file + j+31];
+            }
             for (k = 1; k < key_size; k++) {
                 r = key[key_block + k];
-                index_file = (i-(i%key_size)+k) << exp_file;
-                if ((r != 0) && ((r & (r - 1)) == 0)) { // is power of 2, then bitshift
-                    exp_r = log2(r); 
-                    for(j = 0; j < file_size; j+=32) {
-                        encrypted_file[index_encry + j] += file[index_file+j] << exp_r;
-                        encrypted_file[index_encry + j+1] += file[index_file+j+1] << exp_r;
-                        encrypted_file[index_encry + j+2] += file[index_file+j+2] << exp_r;
-                        encrypted_file[index_encry + j+3] += file[index_file+j+3] << exp_r;
-                        encrypted_file[index_encry + j+4] += file[index_file+j+4] << exp_r;
-                        encrypted_file[index_encry + j+5] += file[index_file+j+5] << exp_r;
-                        encrypted_file[index_encry + j+6] += file[index_file+j+6] << exp_r;
-                        encrypted_file[index_encry + j+7] += file[index_file+j+7] << exp_r;
-                        encrypted_file[index_encry + j+8] += file[index_file+j+8] << exp_r;
-                        encrypted_file[index_encry + j+9] += file[index_file+j+9] << exp_r;
-                        encrypted_file[index_encry + j+10] += file[index_file+j+10] << exp_r;
-                        encrypted_file[index_encry + j+11] += file[index_file+j+11] << exp_r;
-                        encrypted_file[index_encry + j+12] += file[index_file+j+12] << exp_r;
-                        encrypted_file[index_encry + j+13] += file[index_file+j+13] << exp_r;
-                        encrypted_file[index_encry + j+14] += file[index_file+j+14] << exp_r;
-                        encrypted_file[index_encry + j+15] += file[index_file+j+15] << exp_r;
-                        encrypted_file[index_encry + j+16] += file[index_file+j+16] << exp_r;
-                        encrypted_file[index_encry + j+17] += file[index_file+j+17] << exp_r;
-                        encrypted_file[index_encry + j+18] += file[index_file+j+18] << exp_r;
-                        encrypted_file[index_encry + j+19] += file[index_file+j+19] << exp_r;
-                        encrypted_file[index_encry + j+20] += file[index_file+j+20] << exp_r;
-                        encrypted_file[index_encry + j+21] += file[index_file+j+21] << exp_r;
-                        encrypted_file[index_encry + j+22] += file[index_file+j+22] << exp_r;
-                        encrypted_file[index_encry + j+23] += file[index_file+j+23] << exp_r;
-                        encrypted_file[index_encry + j+24] += file[index_file+j+24] << exp_r;
-                        encrypted_file[index_encry + j+25] += file[index_file+j+25] << exp_r;
-                        encrypted_file[index_encry + j+26] += file[index_file+j+26] << exp_r;
-                        encrypted_file[index_encry + j+27] += file[index_file+j+27] << exp_r;
-                        encrypted_file[index_encry + j+28] += file[index_file+j+28] << exp_r;
-                        encrypted_file[index_encry + j+29] += file[index_file+j+29] << exp_r;
-                        encrypted_file[index_encry + j+30] += file[index_file+j+30] << exp_r;
-                        encrypted_file[index_encry + j+31] += file[index_file+j+31] << exp_r;
-                    }
-                } else {
-                    for(j = 0; j < file_size; j+=32) {
-                        encrypted_file[index_encry + j] += r * file[index_file+j];
-                        encrypted_file[index_encry + j+1] += r * file[index_file+j+1];
-                        encrypted_file[index_encry + j+2] += r * file[index_file+j+2];
-                        encrypted_file[index_encry + j+3] += r * file[index_file+j+3];
-                        encrypted_file[index_encry + j+4] += r * file[index_file+j+4];
-                        encrypted_file[index_encry + j+5] += r * file[index_file+j+5];
-                        encrypted_file[index_encry + j+6] += r * file[index_file+j+6];
-                        encrypted_file[index_encry + j+7] += r * file[index_file+j+7];
-                        encrypted_file[index_encry + j+8] += r * file[index_file+j+8];
-                        encrypted_file[index_encry + j+9] += r * file[index_file+j+9];
-                        encrypted_file[index_encry + j+10] += r * file[index_file+j+10];
-                        encrypted_file[index_encry + j+11] += r * file[index_file+j+11];
-                        encrypted_file[index_encry + j+12] += r * file[index_file+j+12];
-                        encrypted_file[index_encry + j+13] += r * file[index_file+j+13];
-                        encrypted_file[index_encry + j+14] += r * file[index_file+j+14];
-                        encrypted_file[index_encry + j+15] += r * file[index_file+j+15];
-                        encrypted_file[index_encry + j+16] += r * file[index_file+j+16];
-                        encrypted_file[index_encry + j+17] += r * file[index_file+j+17];
-                        encrypted_file[index_encry + j+18] += r * file[index_file+j+18];
-                        encrypted_file[index_encry + j+19] += r * file[index_file+j+19];
-                        encrypted_file[index_encry + j+20] += r * file[index_file+j+20];
-                        encrypted_file[index_encry + j+21] += r * file[index_file+j+21];
-                        encrypted_file[index_encry + j+22] += r * file[index_file+j+22];
-                        encrypted_file[index_encry + j+23] += r * file[index_file+j+23];
-                        encrypted_file[index_encry + j+24] += r * file[index_file+j+24];
-                        encrypted_file[index_encry + j+25] += r * file[index_file+j+25];
-                        encrypted_file[index_encry + j+26] += r * file[index_file+j+26];
-                        encrypted_file[index_encry + j+27] += r * file[index_file+j+27];
-                        encrypted_file[index_encry + j+28] += r * file[index_file+j+28];
-                        encrypted_file[index_encry + j+29] += r * file[index_file+j+29];
-                        encrypted_file[index_encry + j+30] += r * file[index_file+j+30];
-                        encrypted_file[index_encry + j+31] += r * file[index_file+j+31];                    
-                    }
+                index_file = (i-(i%key_size)+k)*file_size;
+                for(j = 0; j < file_size; j+=32) {
+                    encrypted_file[i*file_size + j] += r * file[index_file+j];
+                    encrypted_file[i*file_size + j+1] += r * file[index_file+j+1];
+                    encrypted_file[i*file_size + j+2] += r * file[index_file+j+2];
+                    encrypted_file[i*file_size + j+3] += r * file[index_file+j+3];
+                    encrypted_file[i*file_size + j+4] += r * file[index_file+j+4];
+                    encrypted_file[i*file_size + j+5] += r * file[index_file+j+5];
+                    encrypted_file[i*file_size + j+6] += r * file[index_file+j+6];
+                    encrypted_file[i*file_size + j+7] += r * file[index_file+j+7];
+                    encrypted_file[i*file_size + j+8] += r * file[index_file+j+8];
+                    encrypted_file[i*file_size + j+9] += r * file[index_file+j+9];
+                    encrypted_file[i*file_size + j+10] += r * file[index_file+j+10];
+                    encrypted_file[i*file_size + j+11] += r * file[index_file+j+11];
+                    encrypted_file[i*file_size + j+12] += r * file[index_file+j+12];
+                    encrypted_file[i*file_size + j+13] += r * file[index_file+j+13];
+                    encrypted_file[i*file_size + j+14] += r * file[index_file+j+14];
+                    encrypted_file[i*file_size + j+15] += r * file[index_file+j+15];
+                    encrypted_file[i*file_size + j+16] += r * file[index_file+j+16];
+                    encrypted_file[i*file_size + j+17] += r * file[index_file+j+17];
+                    encrypted_file[i*file_size + j+18] += r * file[index_file+j+18];
+                    encrypted_file[i*file_size + j+19] += r * file[index_file+j+19];
+                    encrypted_file[i*file_size + j+20] += r * file[index_file+j+20];
+                    encrypted_file[i*file_size + j+21] += r * file[index_file+j+21];
+                    encrypted_file[i*file_size + j+22] += r * file[index_file+j+22];
+                    encrypted_file[i*file_size + j+23] += r * file[index_file+j+23];
+                    encrypted_file[i*file_size + j+24] += r * file[index_file+j+24];
+                    encrypted_file[i*file_size + j+25] += r * file[index_file+j+25];
+                    encrypted_file[i*file_size + j+26] += r * file[index_file+j+26];
+                    encrypted_file[i*file_size + j+27] += r * file[index_file+j+27];
+                    encrypted_file[i*file_size + j+28] += r * file[index_file+j+28];
+                    encrypted_file[i*file_size + j+29] += r * file[index_file+j+29];
+                    encrypted_file[i*file_size + j+30] += r * file[index_file+j+30];
+                    encrypted_file[i*file_size + j+31] += r * file[index_file+j+31];
                 }
             }
-            index_encry += file_size;
         }
     #else
-        uint32_t r, i, j, k, index_file, key_block;
+        uint32_t i, j, k, index_file, key_block;
+        float r;
         for (i = 0; i < file_size; i++) {
             key_block = (i % key_size) * key_size;
             index_file = (i-(i%key_size))*file_size;
             for(j = 0; j < file_size; j+=8) {
-                __m256 avx_key = _mm256_broadcast_ps(key[key_block]);
-                __m256 avx_file = _mm256_load_ps(file+index_file+j);
+                __m256 avx_key = _mm256_set_ps(key[key_block],key[key_block],key[key_block],key[key_block],key[key_block],key[key_block],key[key_block],key[key_block]);
+                __m256 avx_file = _mm256_load_ps(&(file[index_file+j]));
                 __m256 key_times_file = _mm256_mul_ps(avx_key, avx_file);
-                _mm256_store_ps(encrypted_file+(i*file_size)+j, key_times_file);
-
-                //encrypted_file[i*file_size + j] = key[key_block] * file[index_file + j];
+                _mm256_store_ps(&(encrypted_file[(i*file_size)+j]), key_times_file);
+                
+                
             }
             for (k = 1; k < key_size; k++) {
                 r = key[key_block + k];
                 index_file = (i-(i%key_size)+k)*file_size;
                 for(j = 0; j < file_size; j+=8) {
-                    __m256 avx_r = _mm256_broadcast_ps(r);
-                    __m256 avx_file = _mm256_load_ps(file+index_file+j);
-                    __m256 avx_enc_file = _mm256_load_ps(file+(i*file_size)+j);
+                    __m256 avx_r = _mm256_set_ps(r,r,r,r,r,r,r,r);
+                    __m256 avx_file = _mm256_load_ps(&(file[index_file+j]));
+                    __m256 avx_enc_file = _mm256_load_ps(&(encrypted_file[(i*file_size)+j]));
                     __m256 r_times_file = _mm256_mul_ps(avx_r, avx_file);
                     __m256 enc_file_add = _mm256_add_ps(r_times_file, avx_enc_file);
-                    _mm256_store_ps(encrypted_file+(i*file_size)+j, enc_file_add);
-
-                    //encrypted_file[i*file_size + j] += r * file[index_file+j];
+                    _mm256_store_ps(&(encrypted_file[(i*file_size)+j]), enc_file_add);
+                    
                 }
             }
         }

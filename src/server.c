@@ -77,13 +77,10 @@ int main(int argc, char **argv) {
         files[0][i+3] = i+3;
     }
     
-    #if OPTIM == 3
-        uint32_t *encrypted_file = aligned_alloc(file_size,file_byte_size);
-        if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
-    #else
-        uint32_t *encrypted_file = malloc(file_byte_size);
-        if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
-    #endif
+    
+    float *encrypted_file = aligned_alloc(file_size,file_byte_size);
+    if (encrypted_file == NULL) fprintf(stderr, "Error malloc: encrypted_file\n");
+    
     
     struct sockaddr_storage their_addr; 
     socklen_t addr_size;
@@ -143,7 +140,6 @@ int main(int argc, char **argv) {
         n_events = poll(fds, 1, -1);
         if (n_events < 0) fprintf(stderr, "Error while using poll(), errno: %d", errno);
         else if (n_events > 0){
-            first_iter = false;
             do {
                 pollin_happened = fds[0].revents & POLLIN;
                 if (pollin_happened) { //new connection on server socket
@@ -163,9 +159,9 @@ int main(int argc, char **argv) {
                     /* Receiving request Key */
                     if (old_key_size != key_size){ // malloc only once for keys of same sizes
                         if (file_size % key_size != 0) fprintf(stderr, "Invalid key format\n");
-                        key_payload_length = key_size*key_size*sizeof(uint32_t);
+                        key_payload_length = key_size*key_size*sizeof(float);
                         if (key != NULL) free(key);
-                        key = malloc(key_payload_length);
+                        key = aligned_alloc(key_size, key_payload_length);
                     }
                     recv_done = 0;
                     while (recv_done < key_payload_length) {
