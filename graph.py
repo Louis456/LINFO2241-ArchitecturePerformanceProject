@@ -48,21 +48,21 @@ if __name__ == "__main__":
         print("response_times:", np.mean(response_times), ", std:", np.std(response_times))
         
 
-    print("\nplotting graph...")
-    fig, ax = plt.subplots()
-    ax.hist(service_times,bins=50, density=True)
-    
+        print("\nplotting graph...")
+        fig, ax = plt.subplots()
+        ax.hist(service_times,bins=50, density=True)
+        
 
-    ax.set_ylabel('probability')
-    ax.set_title('probability distribution of service time [S]')
-    ax.set_xlabel('service time (ms)')
-    ax.legend()
+        ax.set_ylabel('probability')
+        ax.set_title('probability distribution of service time [S]')
+        ax.set_xlabel('service time (ms)')
+        ax.legend()
 
-    plt.ylim(bottom=0)
-    plt.rc('axes', axisbelow=True)
-    plt.grid(axis='y', linestyle='dashed')
-    fig.tight_layout()
-    plt.savefig("S_distribution.png")
-    plt.close()
+        plt.ylim(bottom=0)
+        plt.rc('axes', axisbelow=True)
+        plt.grid(axis='y', linestyle='dashed')
+        fig.tight_layout()
+        plt.savefig(f"perf_eval/plots_phase4/S_distribution_rate_{0}.png",rate)
+        plt.close()
 
-    print("done")
+        print("done")
