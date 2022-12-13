@@ -20,5 +20,5 @@ uint64_t get_us(struct timeval *timestamp) {
 uint64_t ran_expo(double lambda){
 	double u;
 	u = rand() / (RAND_MAX + 1.0);
-	return -log(1- u) * 1000000000 / lambda;
+	return -log(1- u) * 1000000 / lambda;
 }
