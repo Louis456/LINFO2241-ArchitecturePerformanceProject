@@ -6,6 +6,7 @@ import time
 import re
 from pathlib import Path
 import matplotlib.pyplot as plt
+import seaborn as sns
 import os
 
 
@@ -50,19 +51,15 @@ if __name__ == "__main__":
         print("response_times:", np.mean(response_times), ", std:", np.std(response_times))
 
         print("\nplotting graph...")
-        fig, ax = plt.subplots()
-        ax.hist(service_times)
-        
+        sns.histplot(data=service_times)
 
-        ax.set_ylabel('probability')
-        ax.set_title('probability distribution of service time [S]')
-        ax.set_xlabel('service time (ms)')
+        plt.title('probability distribution of service time [S]')
+        plt.xlabel('service time (ms)')
         #ax.legend()
 
         plt.ylim(bottom=0)
         plt.rc('axes', axisbelow=True)
         plt.grid(axis='y', linestyle='dashed')
-        fig.tight_layout()
         if not os.path.exists("perf_eval"):
             os.makedirs("perf_eval")
         if not os.path.exists("perf_eval/plots_phase4"):
