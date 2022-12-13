@@ -16,3 +16,9 @@ uint64_t get_ms(struct timeval *timestamp) {
 uint64_t get_us(struct timeval *timestamp) {
     return timestamp->tv_sec * 1000000 + timestamp->tv_usec;
 }
+
+uint64_t ran_expo(double lambda){
+	double u;
+	u = rand() / (RAND_MAX + 1.0);
+	return -log(1- u) * 1000000000 / lambda;
+}

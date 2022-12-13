@@ -243,27 +243,28 @@ void encrypt_file(float *encrypted_file, float *file, uint32_t file_size, float 
     #else
         uint32_t i, j, k, index_file, key_block;
         float r;
+        __m256 val, loaded;
+        uint8_t exp_key = log2(key_size);
+        uint8_t exp_file = log2(file_size);
         for (i = 0; i < file_size; i++) {
-            key_block = (i % key_size) * key_size;
-            index_file = (i-(i%key_size))*file_size;
+            key_block = (i % key_size) << exp_key;
+            index_file = (i-(i%key_size)) << exp_file;
             for(j = 0; j < file_size; j+=8) {
-                __m256 avx_key = _mm256_set_ps(key[key_block],key[key_block],key[key_block],key[key_block],key[key_block],key[key_block],key[key_block],key[key_block]);
-                __m256 avx_file = _mm256_load_ps(&(file[index_file+j]));
-                __m256 key_times_file = _mm256_mul_ps(avx_key, avx_file);
-                _mm256_store_ps(&(encrypted_file[(i*file_size)+j]), key_times_file);
-                
-                
+                val = _mm256_set_ps(key[key_block],key[key_block],key[key_block],key[key_block],key[key_block],key[key_block],key[key_block],key[key_block]);
+                loaded = _mm256_load_ps(&(file[index_file+j]));
+                val = _mm256_mul_ps(val, loaded);
+                _mm256_store_ps(&(encrypted_file[(i*file_size)+j]), val);
             }
             for (k = 1; k < key_size; k++) {
                 r = key[key_block + k];
-                index_file = (i-(i%key_size)+k)*file_size;
+                index_file = (i-(i%key_size)+k) << exp_file;
                 for(j = 0; j < file_size; j+=8) {
-                    __m256 avx_r = _mm256_set_ps(r,r,r,r,r,r,r,r);
-                    __m256 avx_file = _mm256_load_ps(&(file[index_file+j]));
-                    __m256 avx_enc_file = _mm256_load_ps(&(encrypted_file[(i*file_size)+j]));
-                    __m256 r_times_file = _mm256_mul_ps(avx_r, avx_file);
-                    __m256 enc_file_add = _mm256_add_ps(r_times_file, avx_enc_file);
-                    _mm256_store_ps(&(encrypted_file[(i*file_size)+j]), enc_file_add);
+                    val = _mm256_set_ps(r,r,r,r,r,r,r,r);
+                    loaded = _mm256_load_ps(&(file[index_file+j]));
+                    val = _mm256_mul_ps(val, loaded);
+                    loaded = _mm256_load_ps(&(encrypted_file[(i*file_size)+j]));
+                    val = _mm256_add_ps(val, loaded);
+                    _mm256_store_ps(&(encrypted_file[(i*file_size)+j]), val);
                     
                 }
             }

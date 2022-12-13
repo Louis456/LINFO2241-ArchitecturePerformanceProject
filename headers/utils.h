@@ -25,4 +25,7 @@ uint64_t get_ms(struct timeval *timestamp);
 /* Return us from timeval structure */
 uint64_t get_us(struct timeval *timestamp);
 
+/* Return time in µs following exponential distribution */
+uint64_t ran_expo(double lambda);
+
 #endif  /* __UTILS_H_ */

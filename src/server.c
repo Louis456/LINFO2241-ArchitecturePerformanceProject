@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
     struct sockaddr_storage their_addr; 
     socklen_t addr_size;
     int optval = 1;
-    int max_connection_in_queue = 4096;
+    int max_connection_in_queue = 8192;
 
     //char s[INET6_ADDRSTRLEN];
 
@@ -134,8 +134,6 @@ int main(int argc, char **argv) {
     uint8_t code = 0;
     uint32_t sz = htonl(file_byte_size);
 
-    bool first_iter = true;
-
     while(true) {
         n_events = poll(fds, 1, -1);
         if (n_events < 0) fprintf(stderr, "Error while using poll(), errno: %d", errno);
@@ -179,8 +177,6 @@ int main(int argc, char **argv) {
                 }
                 n_events = poll(fds, 1, 0);
             } while (n_events > 0); // accept while there is new connections on listen queue
-        } else {
-            if (!first_iter) break;
         }
     }
     

@@ -111,7 +111,8 @@ int main(int argc, char **argv) {
         if (pthread_err != 0) fprintf(stderr, "Error while creating a thread\n");
         thread_id++;
         
-        double time_to_sleep = 1000000.0 / ((double) mean_rate_request);
+        //double time_to_sleep = 1000000.0 / ((double) mean_rate_request);
+        double time_to_sleep = ran_expo(mean_rate_request);
         int errsleep = usleep(time_to_sleep); // time in microseconds
         if (errsleep == -1) fprintf(stderr, "Error while usleeping\n errno: %d\n", errno);
         
