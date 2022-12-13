@@ -140,6 +140,7 @@ int main(int argc, char **argv) {
         n_events = poll(fds, 1, 2000);
         if (n_events < 0) fprintf(stderr, "Error while using poll(), errno: %d", errno);
         else if (n_events > 0){
+            first_iter = false;
             do {
                 pollin_happened = fds[0].revents & POLLIN;
                 if (pollin_happened) { //new connection on server socket
