@@ -133,9 +133,11 @@ int main(int argc, char **argv) {
     // response variables
     uint8_t code = 0;
     uint32_t sz = htonl(file_byte_size);
+    
+    bool first_iter = true;
 
     while(true) {
-        n_events = poll(fds, 1, -1);
+        n_events = poll(fds, 1, 2000);
         if (n_events < 0) fprintf(stderr, "Error while using poll(), errno: %d", errno);
         else if (n_events > 0){
             do {
@@ -190,6 +192,8 @@ int main(int argc, char **argv) {
                 }
                 n_events = poll(fds, 1, 0);
             } while (n_events > 0); // accept while there is new connections on listen queue
+        } else {
+            if (!first_iter) break;
         }
     }
     

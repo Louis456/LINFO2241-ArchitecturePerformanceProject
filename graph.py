@@ -38,16 +38,7 @@ if __name__ == "__main__":
         time.sleep(1)
         client_proc = script_client(rate)
         client_output = client_proc.communicate()[0].decode()
-
-        server_lines = []
-        server_output = ""
-        try:
-            for line in server_proc.stdout:
-                server_lines.append(line)
-        finally:
-            server_proc.terminate()
-            server_output = "".join(server_lines)
-            del server_lines
+        server_output = server_proc.communicate()[0].decode()
 
         service_times = (float(stime) for stime in re.findall("service_time=(\d+.?\d*)", server_output))
         del server_output
@@ -59,12 +50,12 @@ if __name__ == "__main__":
 
     print("\nplotting graph...")
     fig, ax = plt.subplots()
-    ax.hist(service_times,bins=20, density=True)
+    ax.hist(service_times,bins=50, density=True)
     
 
     ax.set_ylabel('probability')
-    ax.set_title('probability distribution of service time S')
-    ax.set_xlabel('service time')
+    ax.set_title('probability distribution of service time [S]')
+    ax.set_xlabel('service time (ms)')
     ax.legend()
 
     plt.ylim(bottom=0)
