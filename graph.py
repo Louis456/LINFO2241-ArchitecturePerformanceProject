@@ -8,23 +8,25 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import scipy.stats as ss
+from fitter import Fitter
 
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = "2244"
 DURATION = '30' # seconds
-REQUEST_RATES = (32, 64)
+REQUEST_RATES = (50,)
 FSIZE = '1024'
-KSIZE = '128'
+KSIZE = '64'
 THREAD = '1'
 
 def make_clean_make_all():
     subprocess.run(['make', 'clean'])
     subprocess.run(['make', 'client'])
-    subprocess.run(['make', 'server-float-avx'])
+    subprocess.run(['make', 'server-float'])
 
 def script_server():
-    return subprocess.Popen(['./server-float-avx', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return subprocess.Popen(['./server-float', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
 def script_client(request_rate: int):
     return subprocess.Popen(['./client', '-k', KSIZE, '-r', str(request_rate), '-t', DURATION, SERVER_IP+':'+SERVER_PORT], stdout=subprocess.PIPE)
@@ -42,24 +44,45 @@ if __name__ == "__main__":
         client_output = client_proc.communicate()[0].decode()
         server_output = server_proc.communicate()[0].decode()
 
-        service_times = np.array(list(float(stime) for stime in re.findall("service_time=(\d+.?\d*)", server_output)))
+        service_times = np.array(list(float(stime)/1000.0 for stime in re.findall("service_time=(\d+.?\d*)", server_output)))
         del server_output
-        response_times = np.array(list(float(rtime) for rtime in re.findall("response_time=(\d+.?\d*)", client_output)))
+        response_times = np.array(list(float(rtime)/1000.0 for rtime in re.findall("response_time=(\d+.?\d*)", client_output)))
         del client_output
-
         print("service_times:", np.mean(service_times), ", std:", np.std(service_times))
-        print("response_times:", np.mean(response_times), ", std:", np.std(response_times))
+        print("service times :",service_times)
+        #print("response_times:", np.mean(response_times), ", std:", np.std(response_times))
+
+
+
+        f = Fitter(service_times)
+        f.fit()
+        # make take some time since by default, all distribution are tried
+        f.summary()
 
         print("\nplotting graph...")
-        sns.histplot(data=service_times)
+        sns.histplot(data=service_times, stat="probability")
+        x = np.linspace(np.min(service_times),np.max(service_times))
+        y_norm = ss.norm.pdf(x, np.mean(service_times), np.std(service_times)) # the normal pdf
+        y_exp = ss.expon.pdf(x, np.mean(service_times), np.std(service_times))
+        y_chi2 = ss.chi2.pdf(x, np.mean(service_times))
+        alpha = (np.mean(service_times)*np.mean(service_times))/np.var(service_times)
+        beta = np.mean(service_times)/np.var(service_times)
+        y_gamma = ss.gamma.pdf(x, alpha,beta)
+        
+        
+        plt.plot(x, y_norm, color="red", label=f"norm µ={np.mean(service_times):.2f}, σ={np.std(service_times):.2f}")
+        plt.plot(x, y_exp, color='green', label=f"exp µ={np.mean(service_times):.2f}, σ={np.std(service_times):.2f}")
+        plt.plot(x, y_chi2, color='purple', label=f"chi2 df={np.mean(service_times):.2f}")
+        plt.plot(x, y_gamma, color='yellow', label=f"gamma α={alpha:.2f}, β={beta:.2f}")
 
         plt.title('probability distribution of service time [S]')
         plt.xlabel('service time (ms)')
-        #ax.legend()
+        plt.legend()
 
         plt.ylim(bottom=0)
         plt.rc('axes', axisbelow=True)
         plt.grid(axis='y', linestyle='dashed')
+        #plt.xlim(xmin=0)
         if not os.path.exists("perf_eval"):
             os.makedirs("perf_eval")
         if not os.path.exists("perf_eval/plots_phase4"):

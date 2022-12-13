@@ -150,9 +150,6 @@ int main(int argc, char **argv) {
                     client_fd = accept(sockfd, (struct sockaddr *) &servaddr, (socklen_t *) &addr_size);
                     if (client_fd == -1) fprintf(stderr, "accept failed\n errno: %d\n", errno);
                     
-                    // Start timer
-                    struct timeval start_at;
-                    get_current_clock(&start_at);
 
                     /* Receiving request Headers */
                     if ((numbytes = recv(client_fd, &findex, 4, 0)) == -1) 
@@ -175,6 +172,10 @@ int main(int argc, char **argv) {
                         recv_done += numbytes;
                     }
 
+                    // Start timer
+                    struct timeval start_at;
+                    get_current_clock(&start_at);
+
 
                     /* Sending response */
                     encrypt_file(encrypted_file, files[findex], file_size, key, key_size);
@@ -187,7 +188,7 @@ int main(int argc, char **argv) {
                     get_current_clock(&end_at);
                     struct timeval diff_time;
                     timersub(&end_at, &start_at, &diff_time);
-                    printf("service_time=%"PRIu64"\n", get_ms(&diff_time));
+                    printf("service_time=%"PRIu64"\n", get_us(&diff_time));
 
                     close(client_fd);
                 }
