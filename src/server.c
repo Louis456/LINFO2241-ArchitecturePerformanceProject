@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
     struct sockaddr_storage their_addr; 
     socklen_t addr_size;
     int optval = 1;
-    int max_connection_in_queue = 1024;
+    int max_connection_in_queue = 4096;
 
     //char s[INET6_ADDRSTRLEN];
 
@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
                         if (file_size % key_size != 0) fprintf(stderr, "Invalid key format\n");
                         key_payload_length = key_size*key_size*sizeof(float);
                         if (key != NULL) free(key);
-                        key = aligned_alloc(key_size, key_payload_length);
+                        key = malloc(key_payload_length);
                     }
                     recv_done = 0;
                     while (recv_done < key_payload_length) {
@@ -172,9 +172,9 @@ int main(int argc, char **argv) {
 
                     /* Sending response */
                     encrypt_file(encrypted_file, files[findex], file_size, key, key_size);
-                    if (send(client_fd, &code, 1, 0) == -1) fprintf(stderr, "send failed, response error_code\n errno: %d\n", errno);
-                    if (send(client_fd, &sz, 4, 0) == -1) fprintf(stderr, "send failed, response size\n errno: %d\n", errno);
-                    if (send(client_fd, encrypted_file, file_byte_size, 0) == -1) fprintf(stderr, "send failed, response encrypted_file\n errno: %d\n", errno);
+                    if (send(client_fd, &code, 1, MSG_NOSIGNAL) == -1) fprintf(stderr, "send failed, response error_code\n errno: %d\n", errno);
+                    if (send(client_fd, &sz, 4, MSG_NOSIGNAL) == -1) fprintf(stderr, "send failed, response size\n errno: %d\n", errno);
+                    if (send(client_fd, encrypted_file, file_byte_size, MSG_NOSIGNAL) == -1) fprintf(stderr, "send failed, response encrypted_file\n errno: %d\n", errno);
                     close(client_fd);
                 }
                 n_events = poll(fds, 1, 0);

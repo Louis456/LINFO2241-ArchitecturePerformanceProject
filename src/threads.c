@@ -10,15 +10,18 @@ void* start_client_thread(void* args) {
         fprintf(stderr, "Error while connecting to server\n errno: %d\n", errno);
     }
     
-    float *key = aligned_alloc(arguments->key_size,sizeof(float) * arguments->key_payload_length);   
+    float *key = aligned_alloc(htonl(arguments->key_size),sizeof(float) * arguments->key_payload_length); 
     if (key == NULL) fprintf(stderr, "Error malloc: key payload\n");
+    for (uint64_t i = 0;i<arguments->key_payload_length;i++) {
+        key[i] = i;
+    }
 
     // Send request
     uint32_t file_index = htonl(random() % 1000);
     uint32_t key_size = htonl(arguments->key_size);
-    if (send(sockfd, &file_index, 4, 0) == -1) fprintf(stderr, "send failed, request fileindex\n errno: %d\n", errno);
-    if (send(sockfd, &key_size, 4, 0) == -1) fprintf(stderr, "send failed, request key_size\n errno: %d\n", errno);
-    if (send(sockfd, key, sizeof(float) * arguments->key_payload_length, 0) == -1) fprintf(stderr, "send failed, request key\n errno: %d\n", errno);
+    if (send(sockfd, &file_index, 4, MSG_NOSIGNAL) == -1) fprintf(stderr, "send failed, request fileindex\n errno: %d\n", errno);
+    if (send(sockfd, &key_size, 4, MSG_NOSIGNAL) == -1) fprintf(stderr, "send failed, request key_size\n errno: %d\n", errno);
+    if (send(sockfd, key, sizeof(float) * arguments->key_payload_length, MSG_NOSIGNAL) == -1) fprintf(stderr, "send failed, request key\n errno: %d\n", errno);
 
     // Start timer
     struct timeval start_at;
@@ -50,7 +53,7 @@ void* start_client_thread(void* args) {
     get_current_clock(&end_at);
     struct timeval diff_time;
     timersub(&end_at, &start_at, &diff_time);
-    printf("response_time=%"PRIu64"\n", get_us(&diff_time));
+    printf("response_time=%"PRIu64"\n", get_ms(&diff_time));
 
     close(sockfd);
     free(key);
