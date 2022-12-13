@@ -30,8 +30,10 @@ def script_client(request_rate: int):
 
 if __name__ == "__main__":
     make_clean_make_all()
+    print("make clean, make all done")
 
     for rate in REQUEST_RATES:
+        print('----------------\nrequest_rate:', rate)
         server_proc = script_server()
         time.sleep(1)
         client_proc = script_client(rate)
@@ -51,8 +53,11 @@ if __name__ == "__main__":
         del server_output
         response_times = (float(rtime) for rtime in re.findall("response_time=(\d+.?\d*)", client_output))
         del client_output
+        print("service_times:", np.mean(service_times), ", std:", np.std(service_times))
+        print("response_times:", np.mean(response_times), ", std:", np.std(response_times))
         
 
+    print("\nplotting graph...")
     fig, ax = plt.subplots()
     ax.hist(service_times,bins=20, density=True)
     
@@ -68,3 +73,5 @@ if __name__ == "__main__":
     fig.tight_layout()
     plt.savefig("S_distribution.png")
     plt.close()
+
+    print("done")
