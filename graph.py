@@ -63,7 +63,6 @@ def histplot_S_distribution(xs, filename, fit=False):
     y_norm = ss.norm.pdf(x, np.mean(xs), np.std(xs)) # the normal pdf
     y_exp = ss.expon.pdf(x, np.mean(xs), np.std(xs))
     y_chi2 = ss.chi2.pdf(x, np.mean(xs))
-    y_levy = ss.levy.pdf(xs)
     alpha = (np.mean(xs)*np.mean(xs))/np.var(xs)
     beta = np.mean(xs)/np.var(xs)
     y_gamma = ss.gamma.pdf(x, alpha,beta)
@@ -73,7 +72,7 @@ def histplot_S_distribution(xs, filename, fit=False):
         plt.plot(x, y_exp, color='green', label=f"exp µ={np.mean(xs):.2f}, σ={np.std(xs):.2f}")
         plt.plot(x, y_chi2, color='purple', label=f"chi2 df={np.mean(xs):.2f}")
         plt.plot(x, y_gamma, color='yellow', label=f"gamma α={alpha:.2f}, β={beta:.2f}")
-        plt.plot(x, y_levy, color='orange', label=f"levy")
+        
 
     plt.title('probability distribution of service time [S]')
     plt.xlabel('service time (ms)')
