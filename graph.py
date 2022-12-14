@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
         service_times = np.array(list(float(stime)/1000.0 for stime in re.findall("service_time=(\d+.?\d*)", server_output)))
         del server_output
-        response_times = np.array(list(float(rtime)/1000.0 for rtime in re.findall("response_time=(\d+.?\d*)", client_output)))
+        response_times = np.array(list(float(rtime) for rtime in re.findall("response_time=(\d+.?\d*)", client_output)))
         del client_output
         print("service_times:", np.mean(service_times), ", std:", np.std(service_times))
         print("service times :",service_times)
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
         print("\nplotting graph...")
         histplot_S_distribution(service_times, f"S_distribution_rate_{REQUEST_RATES[i]}.png",fit=False)
-        histplot_S_distribution(service_times, f"S_distribution_rate_{REQUEST_RATES[i]}_fit.png",fit=False)
+        histplot_S_distribution(service_times, f"S_distribution_rate_{REQUEST_RATES[i]}_fit.png",fit=True)
 
         print("done")
 
