@@ -63,6 +63,7 @@ def histplot_S_distribution(xs, filename, fit=False):
     y_norm = ss.norm.pdf(x, np.mean(xs), np.std(xs)) # the normal pdf
     y_exp = ss.expon.pdf(x, np.mean(xs), np.std(xs))
     y_chi2 = ss.chi2.pdf(x, np.mean(xs))
+    y_levy = ss.levy.pdf(xs)
     alpha = (np.mean(xs)*np.mean(xs))/np.var(xs)
     beta = np.mean(xs)/np.var(xs)
     y_gamma = ss.gamma.pdf(x, alpha,beta)
@@ -72,6 +73,7 @@ def histplot_S_distribution(xs, filename, fit=False):
         plt.plot(x, y_exp, color='green', label=f"exp µ={np.mean(xs):.2f}, σ={np.std(xs):.2f}")
         plt.plot(x, y_chi2, color='purple', label=f"chi2 df={np.mean(xs):.2f}")
         plt.plot(x, y_gamma, color='yellow', label=f"gamma α={alpha:.2f}, β={beta:.2f}")
+        plt.plot(x, y_levy, color='orange', label=f"levy")
 
     plt.title('probability distribution of service time [S]')
     plt.xlabel('service time (ms)')
@@ -118,9 +120,11 @@ if __name__ == "__main__":
 
         s_times.extend(service_times)
     
+        """
         q_low = np.quantile(service_times, 0.05)
         q_hi = np.quantile(service_times, 0.95)
         service_times = service_times[(service_times > q_low) & (service_times < q_hi)]
+        """
 
 
         print("\nplotting graph...")
@@ -130,11 +134,13 @@ if __name__ == "__main__":
         print("done")
 
     s_times = np.array(s_times)
+    """
     q_low = np.quantile(s_times, 0.05)
     q_hi = np.quantile(s_times, 0.95)
+    s_times = s_times[(s_times > q_low) & (s_times < q_hi)]
+    """
     print("service_times all:", np.mean(s_times), ", std:", np.std(s_times))
     print("service times all :",s_times)
-    s_times = s_times[(s_times > q_low) & (s_times < q_hi)]
     print("\nplotting graph...")
     histplot_S_distribution(s_times, "S_distribution_rate.png",fit=False)
     histplot_S_distribution(s_times, "S_distribution_rate_fit.png",fit=True)
