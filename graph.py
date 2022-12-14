@@ -95,6 +95,11 @@ if __name__ == "__main__":
         f.get_best()
         """
         s_times.extend(service_times)
+    
+        q_low = np.quantile(service_times, 0.05)
+        q_hi = np.quantile(service_times, 0.95)
+        service_times = service_times[(service_times > q_low) & (service_times < q_hi)]
+
 
         print("\nplotting graph...")
         sns.histplot(data=service_times, stat="probability")
@@ -106,11 +111,12 @@ if __name__ == "__main__":
         beta = np.mean(service_times)/np.var(service_times)
         y_gamma = ss.gamma.pdf(x, alpha,beta)
         
-        
+        """
         plt.plot(x, y_norm, color="red", label=f"norm µ={np.mean(service_times):.2f}, σ={np.std(service_times):.2f}")
         plt.plot(x, y_exp, color='green', label=f"exp µ={np.mean(service_times):.2f}, σ={np.std(service_times):.2f}")
         plt.plot(x, y_chi2, color='purple', label=f"chi2 df={np.mean(service_times):.2f}")
         plt.plot(x, y_gamma, color='yellow', label=f"gamma α={alpha:.2f}, β={beta:.2f}")
+        """
 
         plt.title('probability distribution of service time [S]')
         plt.xlabel('service time (ms)')
@@ -129,6 +135,9 @@ if __name__ == "__main__":
 
         print("done")
 
+    q_low = np.quantile(s_times, 0.05)
+    q_hi = np.quantile(s_times, 0.95)
+    s_times = s_times[(s_times > q_low) & (s_times < q_hi)]
     print("\nplotting graph...")
     sns.histplot(data=s_times, stat="probability")
     x = np.linspace(np.min(s_times),np.max(s_times))
