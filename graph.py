@@ -18,7 +18,7 @@ DURATION = '30' # seconds
 FSIZE = '1024'
 KSIZE = '128'
 THREAD = '1'
-REQUEST_RATES = (25,50,100,150,200)
+REQUEST_RATES = (25,50,75,100)
 THEORY_VALUES = (42,)
 
 def make_clean_make_all():
