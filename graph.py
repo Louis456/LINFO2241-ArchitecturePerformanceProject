@@ -135,8 +135,11 @@ if __name__ == "__main__":
 
         print("done")
 
+    s_times = np.array(s_times)
     q_low = np.quantile(s_times, 0.05)
     q_hi = np.quantile(s_times, 0.95)
+    print("service_times all:", np.mean(s_times), ", std:", np.std(s_times))
+    print("service times all :",s_times)
     s_times = s_times[(s_times > q_low) & (s_times < q_hi)]
     print("\nplotting graph...")
     sns.histplot(data=s_times, stat="probability")
