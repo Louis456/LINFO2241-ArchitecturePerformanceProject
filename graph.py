@@ -16,18 +16,18 @@ SERVER_IP = "127.0.0.1"
 SERVER_PORT = "2244"
 DURATION = '30' # seconds
 FSIZE = '1024'
-KSIZE = '64'
+KSIZE = '128'
 THREAD = '1'
-REQUEST_RATES = (10,25,50,75)
+REQUEST_RATES = (25,50,100,150,200)
 THEORY_VALUES = (42,)
 
 def make_clean_make_all():
     subprocess.run(['make', 'clean'])
     subprocess.run(['make', 'client'])
-    subprocess.run(['make', 'server-float'])
+    subprocess.run(['make', 'server-float-avx'])
 
 def script_server():
-    return subprocess.Popen(['./server-float', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return subprocess.Popen(['./server-float-avx', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
 def script_client(request_rate: int):
     return subprocess.Popen(['./client', '-k', KSIZE, '-r', str(request_rate), '-t', DURATION, SERVER_IP+':'+SERVER_PORT], stdout=subprocess.PIPE)
