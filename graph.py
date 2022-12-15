@@ -111,7 +111,7 @@ if __name__ == "__main__":
         del client_output
         print("service_times:", np.mean(service_times), ", std:", np.std(service_times))
         print("service times :",service_times)
-        #print("response_times:", np.mean(response_times), ", std:", np.std(response_times))
+        print("response_times:", np.mean(response_times), ", std:", np.std(response_times))
 
         ys_rtt.append(np.mean(response_times))
         stds_rtt.append(np.std(response_times))
