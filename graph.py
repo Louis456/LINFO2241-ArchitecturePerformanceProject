@@ -14,11 +14,11 @@ from fitter import Fitter
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = "2244"
-DURATION = ('300','120','60','40','30') # seconds
+DURATION = ('150','75','50','38','30') # seconds
 FSIZE = '1024'
 KSIZE = '128'
 THREAD = '1'
-REQUEST_RATES = (10,25,50,75,100)
+REQUEST_RATES = (20,40,60,80,100)
 THEORY_VALUES = (42,)
 
 def make_clean_make_all():
