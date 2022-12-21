@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
                     get_current_clock(&end_at);
                     struct timeval diff_time;
                     timersub(&end_at, &start_at, &diff_time);
-                    printf("service_time=%"PRIu64"\n", get_us(&diff_time));
+                    //printf("service_time=%"PRIu64"\n", get_us(&diff_time));
 
                     close(client_fd);
                 }
