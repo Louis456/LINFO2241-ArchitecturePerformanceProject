@@ -14,7 +14,7 @@ from fitter import Fitter
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = "2244"
-DURATION = ('60','30','24','20','17','15','13','12','11','10') # seconds
+DURATION = ('60','40','30','24','20','17','15','13','12','11','10') # seconds
 FSIZE = '1024'
 KSIZE = '128'
 THREAD = '1'
