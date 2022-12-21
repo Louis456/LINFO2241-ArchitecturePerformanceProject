@@ -14,23 +14,25 @@ from fitter import Fitter
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = "2244"
-DURATION = ('150','75','50','38','30') # seconds
+DURATION = ('105','70','52','42','35','30','26','21','17','15') # seconds
 FSIZE = '1024'
 KSIZE = '128'
 THREAD = '1'
-REQUEST_RATES = (20,40,60,80,100)
-THEORY_VALUES = (42,)
+REQUEST_RATES = (20,30,40,50,60,70,80,100,120,140)
+TRUE_VALUES_MEAN = (24.80,18.36,20.06,20.96)
+TRUE_VALUES_STD = (13.75,11.67,12.80,13.71)
+THEORY_VALUES = (14.53,19.52,32.86,181.22)
 
 def make_clean_make_all():
     subprocess.run(['make', 'clean'])
-    subprocess.run(['make', 'client'])
-    subprocess.run(['make', 'server-float-avx'])
+    subprocess.run(['make', 'client-queue'])
+    subprocess.run(['make', 'server-queue'])
 
 def script_server():
-    return subprocess.Popen(['./server-float-avx', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return subprocess.Popen(['./server-queue', '-j', THREAD, '-s', FSIZE, '-p', SERVER_PORT], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
 def script_client(request_rate: int, duration:str):
-    return subprocess.Popen(['./client', '-k', KSIZE, '-r', str(request_rate), '-t', duration, SERVER_IP+':'+SERVER_PORT], stdout=subprocess.PIPE)
+    return subprocess.Popen(['./client-queue', '-k', KSIZE, '-r', str(request_rate), '-t', duration, SERVER_IP+':'+SERVER_PORT], stdout=subprocess.PIPE)
 
 def barplot_theory(xs, ys, labels, stds):
     fig, ax = plt.subplots() #figsize=(10, 7)
@@ -75,7 +77,7 @@ def histplot_S_distribution(xs, filename, fit=False):
         
 
     plt.title('probability distribution of service time [S]')
-    plt.xlabel('service time (ms)')
+    plt.xlabel('service time (ms)') 
     plt.legend()
 
     plt.ylim(bottom=0)
@@ -96,64 +98,47 @@ if __name__ == "__main__":
     ys_rtt = []
     stds_rtt = []
     s_times = []
-
-    for i in range(len(REQUEST_RATES)):
-        print('----------------\nrequest_rate:', REQUEST_RATES[i])
-        server_proc = script_server()
-        time.sleep(1)
-        client_proc = script_client(REQUEST_RATES[i], DURATION[i])
-        client_output = client_proc.communicate()[0].decode()
-        server_output = server_proc.communicate()[0].decode()
-
-        service_times = np.array(list(float(stime)/1000.0 for stime in re.findall("service_time=(\d+.?\d*)", server_output)))
-        del server_output
-        response_times = np.array(list(float(rtime) for rtime in re.findall("response_time=(\d+.?\d*)", client_output)))
-        del client_output
-        print("service_times:", np.mean(service_times), ", std:", np.std(service_times))
-        print("service times :",service_times)
-        print("response_times:", np.mean(response_times), ", std:", np.std(response_times))
-
-        ys_rtt.append(np.mean(response_times))
-        stds_rtt.append(np.std(response_times))
-
-
-        s_times.extend(service_times)
     
-        """
-        q_low = np.quantile(service_times, 0.05)
-        q_hi = np.quantile(service_times, 0.95)
-        service_times = service_times[(service_times > q_low) & (service_times < q_hi)]
-        """
+    with open('queuing.csv', 'w') as csvfile:
+        csvfile.write("rate,s_mean,s_std,r_mean,r_std\n")
+        for i in range(len(REQUEST_RATES)):
+            print('----------------\nrequest_rate:', REQUEST_RATES[i])
+            server_proc = script_server()
+            time.sleep(1)
+            client_proc = script_client(REQUEST_RATES[i], DURATION[i])
+            client_output = client_proc.communicate()[0].decode()
+            server_output = server_proc.communicate()[0].decode()
 
+            service_times = np.array(list(float(stime)/1000.0 for stime in re.findall("service_time=(\d+.?\d*)", server_output)))
+            del server_output
+            response_times = np.array(list(float(rtime) for rtime in re.findall("response_time=(\d+.?\d*)", client_output)))
+            del client_output
+            print("service_times:", np.mean(service_times), ", std:", np.std(service_times))
+            print("response_times:", np.mean(response_times), ", std:", np.std(response_times))
+            csvfile.write(f"{REQUEST_RATES[i]},{np.mean(service_times)},{np.std(service_times)},{np.mean(response_times)},{np.std(response_times)}\n")
+            ys_rtt.append(np.mean(response_times))
+            stds_rtt.append(np.std(response_times))
 
+            s_times.extend(service_times)
+        
+            print("\nplotting graph...")
+            histplot_S_distribution(service_times, f"S_distribution_rate_{REQUEST_RATES[i]}.png",fit=False)
+            histplot_S_distribution(service_times, f"S_distribution_rate_{REQUEST_RATES[i]}_fit.png",fit=True)
+            print("done")
+
+        s_times = np.array(s_times)
+        print("service_times all:", np.mean(s_times), ", std:", np.std(s_times))
+        print("service times all :",s_times)
+        csvfile.write(f"ALL,{np.mean(s_times)},{np.std(s_times)},NaN,NaN\n")
         print("\nplotting graph...")
-        histplot_S_distribution(service_times, f"S_distribution_rate_{REQUEST_RATES[i]}.png",fit=False)
-        histplot_S_distribution(service_times, f"S_distribution_rate_{REQUEST_RATES[i]}_fit.png",fit=True)
-
-        print("done")
-
-    s_times = np.array(s_times)
-    """
-    q_low = np.quantile(s_times, 0.05)
-    q_hi = np.quantile(s_times, 0.95)
-    s_times = s_times[(s_times > q_low) & (s_times < q_hi)]
-    """
-    print("service_times all:", np.mean(s_times), ", std:", np.std(s_times))
-    print("service times all :",s_times)
-    print("\nplotting graph...")
-    histplot_S_distribution(s_times, "S_distribution_rate.png",fit=False)
-    histplot_S_distribution(s_times, "S_distribution_rate_fit.png",fit=True)
-
+        histplot_S_distribution(s_times, "S_distribution_rate.png",fit=False)
+        histplot_S_distribution(s_times, "S_distribution_rate_fit.png",fit=True)
+        
     print("done")
 
-
-    ys = (ys_rtt, THEORY_VALUES)
-    stds = (stds_rtt, [])
-    labels = ("real", "theory")
+    ys = (TRUE_VALUES_MEAN, THEORY_VALUES)
+    stds = (TRUE_VALUES_STD, [])
+    labels = ("experimental", "theoretical")
     barplot_theory(REQUEST_RATES, ys, labels, stds)
-
-    
-
-
 
     print("All done !")

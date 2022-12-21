@@ -16,12 +16,12 @@ SERVER_OBJECTS_UNROLL = $(SERVER_SOURCES:.c=unroll.o)
 SERVER_OBJECTS_OPTIM = $(SERVER_SOURCES:.c=optim.o)
 SERVER_OBJECTS_AVX = $(SERVER_SOURCES:.c=avx.o)
 
-CLIENT = client
+CLIENT = client-queue
 SERVER = server
 SERVER_INLINE = server-inline
 SERVER_UNROLL = server-unroll
 SERVER_OPTIM = server-float
-SERVER_AVX = server-float-avx
+SERVER_AVX = server-queue
 
 all: $(CLIENT) $(SERVER) $(SERVER_OPTIM) $(SERVER_INLINE) $(SERVER_UNROLL) $(SERVER_AVX)
 
