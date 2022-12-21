@@ -134,13 +134,13 @@ int main(int argc, char **argv) {
     uint8_t code = 0;
     uint32_t sz = htonl(file_byte_size);
     
-    bool first_iter = true;
+    //bool first_iter = true;
 
     while(true) {
-        n_events = poll(fds, 1, 2000);
+        n_events = poll(fds, 1, -1);
         if (n_events < 0) fprintf(stderr, "Error while using poll(), errno: %d", errno);
         else if (n_events > 0){
-            first_iter = false;
+            //first_iter = false;
             do {
                 pollin_happened = fds[0].revents & POLLIN;
                 if (pollin_happened) { //new connection on server socket
@@ -194,8 +194,6 @@ int main(int argc, char **argv) {
                 }
                 n_events = poll(fds, 1, 0);
             } while (n_events > 0); // accept while there is new connections on listen queue
-        } else {
-            if (!first_iter) break;
         }
     }
     
