@@ -19,9 +19,9 @@ FSIZE = '1024'
 KSIZE = '128'
 THREAD = '1'
 REQUEST_RATES = (20,30,40,50,60,70,80,90,100,110,120)
-TRUE_VALUES_MEAN = (24.80,18.36,20.06,20.96)
-TRUE_VALUES_STD = (13.75,11.67,12.80,13.71)
-THEORY_VALUES = (14.53,19.52,32.86,181.22)
+TRUE_VALUES_MEAN = (27.00,21.64,22.23,22.32,17.55,21.93,23.97,28.77,30.00,36.72,199.92)
+TRUE_VALUES_STD = (14.44,13.61,13.71,14.74,11.82,15.69,14.49,18.50,20.79,26.97,81.06)
+THEORY_VALUES = (13.91, 15.74, 18.36, 22.39, 29.42, 44.84, 105.54, 0, 0, 0, 0)
 
 def make_clean_make_all():
     subprocess.run(['make', 'clean'])
@@ -36,7 +36,7 @@ def script_client(request_rate: int, duration:str):
 
 def barplot_theory(xs, ys, labels, stds):
     fig, ax = plt.subplots() #figsize=(10, 7)
-    width = 0.1
+    width = 0.3
     x = np.arange(len(xs))
     nb_bars = len(ys)
     v = - (nb_bars-1) / 2
@@ -98,9 +98,9 @@ if __name__ == "__main__":
     ys_rtt = []
     stds_rtt = []
     s_times = []
-    
     with open('queuing.csv', 'w') as csvfile:
         csvfile.write("rate,s_mean,s_std,r_mean,r_std\n")
+        
         for i in range(len(REQUEST_RATES)):
             print('----------------\nrequest_rate:', REQUEST_RATES[i])
             server_proc = script_server()
@@ -135,7 +135,6 @@ if __name__ == "__main__":
         histplot_S_distribution(s_times, "S_distribution_rate_fit.png",fit=True)
         
     print("done")
-
     ys = (TRUE_VALUES_MEAN, THEORY_VALUES)
     stds = (TRUE_VALUES_STD, [])
     labels = ("experimental", "theoretical")
